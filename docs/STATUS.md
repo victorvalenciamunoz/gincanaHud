@@ -1,7 +1,7 @@
 # Status
 
 **Phase:** 6+ / D16 evento + **D17 roles Admin**  
-**Updated:** 2026-08-05
+**Updated:** 2026-08-13
 
 ## Done (reciente)
 
@@ -27,9 +27,10 @@
 
 ## Next
 
-1. Probar AR marker en calle (FOV/pitch finos si hace falta)
-2. Estética Unirse / Admin
-3. Key Vault Azure
+1. Completar / validar demo Azure ACA (`aspire deploy` → borrar `rg-gincanahud-demo`)
+2. Probar AR marker en calle (FOV/pitch finos si hace falta)
+3. Estética Unirse / Admin
+4. Key Vault Azure (cuando el entorno cloud deje de ser solo demo)
 
 ## Explicitly deferred
 

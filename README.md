@@ -20,6 +20,29 @@ Abre el dashboard de Aspire; Api y Admin quedan cableados a Postgres.
 
 En el cliente MAUI, configura `ApiOptions.BaseUrl` en `MauiProgram.cs` (Dev Tunnel, IP de LAN o URL de Azure).
 
+## Azure (demo puntual)
+
+Despliegue a **Azure Container Apps** con Aspire. Pensado para demos: al terminar se **borra el resource group** para no acumular coste. El run local no cambia (Postgres sigue con volumen Docker; en Azure el contenedor Postgres es **efímero**, sin `WithDataVolume`, porque Azure Files rompe `initdb`).
+
+Prerrequisitos: Docker Desktop en marcha, `az login`, Aspire CLI (`aspire`).
+
+```bash
+# Una vez (o al prompt de aspire deploy)
+aspire secret set "Azure:SubscriptionId" "<tu-subscription-id>" --apphost src/GincanaHud.AppHost/GincanaHud.AppHost.csproj
+aspire secret set "Azure:Location" "westeurope" --apphost src/GincanaHud.AppHost/GincanaHud.AppHost.csproj
+aspire secret set "Azure:ResourceGroup" "rg-gincanahud-demo" --apphost src/GincanaHud.AppHost/GincanaHud.AppHost.csproj
+
+aspire deploy --apphost src/GincanaHud.AppHost/GincanaHud.AppHost.csproj
+```
+
+Los parámetros `admin-username` / `admin-password` son los mismos que en local (user-secrets o prompt).
+
+**Teardown (obligatorio tras la demo):**
+
+```bash
+az group delete -n rg-gincanahud-demo --yes --no-wait
+```
+
 ## Proyectos
 
 | Proyecto | Rol |

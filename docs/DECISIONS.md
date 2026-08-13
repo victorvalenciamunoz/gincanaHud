@@ -130,7 +130,27 @@ Panel Admin con **cookie authentication**. Sustituido parcialmente por **D17** (
 | Entorno | Origen |
 |---------|--------|
 | **Desarrollo** | User Secrets Aspire (`Parameters:admin-username` / `admin-password`) → bootstrap SuperAdmin en Api |
+| **Azure demo** | Mismos `Parameters` en `aspire deploy` (sin Key Vault aún) |
 | **Azure (futuro)** | Key Vault → mismos parámetros |
+
+## D18 — Azure demo: ACA + borrar resource group
+
+**Contexto:** portfolio / aprendizaje; no queremos coste fijo 24/7.
+
+**Elegido**
+
+- Despliegue con `aspire deploy` a **Azure Container Apps**.
+- Postgres como **contenedor** en ACA (el `AddPostgres` local), no Flexible Server.
+- **Sin `WithDataVolume` en publish**: Azure Files rompe `initdb` (`chmod` → Operation not permitted). Volumen solo en local; en Azure datos efímeros.
+- Api/Admin con `MinReplicas = 0` (scale-to-zero).
+- Tras la demo: `az group delete -n rg-gincanahud-demo` → coste ~0.
+
+**Rechazado (por ahora)**
+
+- GitHub Actions / CI de deploy.
+- Azure Database for PostgreSQL Flexible Server.
+- Key Vault en el primer deploy.
+- Persistencia de Postgres en ACA vía Azure Files.
 
 Login `/account/login` (valida contra Api), logout `/account/logout`, `FallbackPolicy` autenticado.
 
