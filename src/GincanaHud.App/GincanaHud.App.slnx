@@ -1,0 +1,5 @@
+<Solution>
+  <Project Path="GincanaHud.App.csproj">
+    <Deploy Solution="Debug|*" />
+  </Project>
+</Solution>

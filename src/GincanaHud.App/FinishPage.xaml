@@ -1,0 +1,183 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:GincanaHud.App.ViewModels"
+             x:Class="GincanaHud.App.FinishPage"
+             x:DataType="vm:FinishViewModel"
+             Title="Fin"
+             BackgroundColor="#071018">
+
+    <Grid>
+        <Grid.Background>
+            <LinearGradientBrush StartPoint="0,0" EndPoint="0.8,1">
+                <GradientStop Color="#06141A" Offset="0" />
+                <GradientStop Color="#0A2A22" Offset="0.5" />
+                <GradientStop Color="#0B1218" Offset="1" />
+            </LinearGradientBrush>
+        </Grid.Background>
+
+        <Grid Padding="20,44,20,24" RowDefinitions="Auto,*,Auto" RowSpacing="14">
+            <VerticalStackLayout Spacing="4">
+                <Label Text="GincanaHud"
+                       FontFamily="ChakraPetchBold"
+                       TextColor="#7CFFB2"
+                       FontSize="16"
+                       CharacterSpacing="1.5" />
+                <Label Text="{Headline}"
+                       FontFamily="ChakraPetchBold"
+                       TextColor="#E8EEF4"
+                       FontSize="30" />
+                <Label Text="{$'{ActivityTitle}'}"
+                       FontFamily="ChakraPetch"
+                       TextColor="#8FA0B0"
+                       FontSize="14"
+                       LineBreakMode="TailTruncation" />
+                <Label Text="{$'{Subtitle}'}"
+                       TextColor="#C5D0DB"
+                       FontSize="14"
+                       Margin="0,8,0,0" />
+
+                <Border Margin="0,12,0,0"
+                        Padding="14,12"
+                        StrokeThickness="1.5"
+                        Stroke="#3D8F68"
+                        BackgroundColor="#CC0B1218">
+                    <Border.StrokeShape>
+                        <RoundRectangle CornerRadius="10" />
+                    </Border.StrokeShape>
+                    <VerticalStackLayout Spacing="4">
+                        <Label Text="{$'{MyStats}'}"
+                               FontFamily="ChakraPetchBold"
+                               TextColor="#7CFFB2"
+                               FontSize="17" />
+                        <Label Text="{$'{RankLine}'}"
+                               FontFamily="ChakraPetch"
+                               TextColor="#C5D0DB"
+                               FontSize="13"
+                               IsVisible="{RankLine != ''}" />
+                    </VerticalStackLayout>
+                </Border>
+            </VerticalStackLayout>
+
+            <Grid Grid.Row="1">
+                <ActivityIndicator IsRunning="{Busy}"
+                                   IsVisible="{Busy}"
+                                   Color="#7CFFB2"
+                                   VerticalOptions="Center" />
+
+                <ScrollView IsVisible="{!Busy}">
+                    <VerticalStackLayout Spacing="12">
+                        <!-- Podio: 2º | 1º | 3º -->
+                        <FlexLayout IsVisible="{HasPodium}"
+                                    Direction="Row"
+                                    JustifyContent="SpaceEvenly"
+                                    AlignItems="End"
+                                    HeightRequest="100"
+                                    Padding="0,4">
+                            <BindableLayout.ItemsSource>
+                                <Binding Path="Podium" />
+                            </BindableLayout.ItemsSource>
+                            <BindableLayout.ItemTemplate>
+                                <DataTemplate x:DataType="vm:PodiumSlot">
+                                    <Border FlexLayout.Grow="1"
+                                            FlexLayout.Basis="30%"
+                                            Margin="4,0"
+                                            StrokeThickness="1.5"
+                                            Stroke="{$'{Accent}'}"
+                                            BackgroundColor="#CC0B1218"
+                                            Padding="8,10"
+                                            HeightRequest="{BarHeight}">
+                                        <Border.StrokeShape>
+                                            <RoundRectangle CornerRadius="10" />
+                                        </Border.StrokeShape>
+                                        <VerticalStackLayout Spacing="2" VerticalOptions="End">
+                                            <Label Text="{$'#{Place}'}"
+                                                   FontFamily="ChakraPetchBold"
+                                                   TextColor="{$'{Accent}'}"
+                                                   FontSize="20"
+                                                   HorizontalTextAlignment="Center" />
+                                            <Label Text="{$'{Name}'}"
+                                                   FontFamily="ChakraPetchBold"
+                                                   TextColor="{IsMe ? '#7CFFB2' : '#E8EEF4'}"
+                                                   FontSize="12"
+                                                   LineBreakMode="TailTruncation"
+                                                   HorizontalTextAlignment="Center" />
+                                            <Label Text="{$'{Time}'}"
+                                                   FontFamily="ChakraPetch"
+                                                   TextColor="#FFC42E"
+                                                   FontSize="12"
+                                                   HorizontalTextAlignment="Center" />
+                                        </VerticalStackLayout>
+                                    </Border>
+                                </DataTemplate>
+                            </BindableLayout.ItemTemplate>
+                        </FlexLayout>
+
+                        <Label Text="ORDEN DE LLEGADA"
+                               FontFamily="ChakraPetchBold"
+                               TextColor="#5FA882"
+                               FontSize="11"
+                               CharacterSpacing="1.5"
+                               Margin="0,4,0,0" />
+                        <Label Text="{$'{Error}'}"
+                               TextColor="#FF8A8A"
+                               FontSize="13"
+                               IsVisible="{Error != null}" />
+                        <CollectionView ItemsSource="{Binding Ranking}"
+                                        SelectionMode="None">
+                            <CollectionView.ItemTemplate>
+                                <DataTemplate x:DataType="vm:RankingRow">
+                                    <Grid Padding="0,8"
+                                          ColumnDefinitions="36,*,Auto"
+                                          ColumnSpacing="10">
+                                        <Label Text="{$'#{Place}'}"
+                                               FontFamily="ChakraPetchBold"
+                                               TextColor="#9AABBC"
+                                               FontSize="14"
+                                               VerticalOptions="Center" />
+                                        <VerticalStackLayout Grid.Column="1" Spacing="1" VerticalOptions="Center">
+                                            <Label Text="{$'{Name}'}"
+                                                   FontFamily="ChakraPetchBold"
+                                                   TextColor="{IsMe ? '#7CFFB2' : '#E8EEF4'}"
+                                                   FontSize="15"
+                                                   LineBreakMode="TailTruncation" />
+                                            <Label Text="{Finished ? 'Meta' : 'En ruta'}"
+                                                   TextColor="#6B7C8D"
+                                                   FontSize="11" />
+                                        </VerticalStackLayout>
+                                        <Label Grid.Column="2"
+                                               FontFamily="ChakraPetchBold"
+                                               Text="{$'{Detail}'}"
+                                               TextColor="{Finished ? '#FFC42E' : '#6B7C8D'}"
+                                               FontSize="15"
+                                               VerticalOptions="Center" />
+                                    </Grid>
+                                </DataTemplate>
+                            </CollectionView.ItemTemplate>
+                        </CollectionView>
+                    </VerticalStackLayout>
+                </ScrollView>
+            </Grid>
+
+            <VerticalStackLayout Grid.Row="2" Spacing="10">
+                <Button Text="Seguir en el HUD"
+                        Command="{CloseCommand}"
+                        BackgroundColor="#1F6F4A"
+                        TextColor="White"
+                        FontFamily="ChakraPetchBold"
+                        FontSize="16"
+                        BorderColor="#7CFFB2"
+                        BorderWidth="1.5"
+                        CornerRadius="10"
+                        HeightRequest="50" />
+                <Button Text="Salir de la actividad"
+                        Command="{LeaveCommand}"
+                        BackgroundColor="#1A2834"
+                        TextColor="#C5D0DB"
+                        FontFamily="ChakraPetch"
+                        CornerRadius="10"
+                        HeightRequest="44" />
+            </VerticalStackLayout>
+        </Grid>
+    </Grid>
+</ContentPage>

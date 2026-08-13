@@ -1,0 +1,63 @@
+﻿@page "/"
+@rendermode InteractiveServer
+@inject AdminApiClient Api
+@inject IHttpContextAccessor Http
+
+<PageTitle>Admin</PageTitle>
+
+<h1>GincanaHud Admin</h1>
+<p>Panel de gestión sobre la API Aspire.</p>
+
+@if (!string.IsNullOrEmpty(_error))
+{
+    <p class="error">@_error</p>
+}
+else if (_loading)
+{
+    <p>Cargando…</p>
+}
+else
+{
+    <div class="stats">
+        <div><strong>@_players</strong><span>jugadores</span></div>
+        <div><strong>@_activities</strong><span>actividades</span></div>
+        <div><strong>@_pois</strong><span>POIs</span></div>
+    </div>
+}
+
+@code {
+    bool _loading = true;
+    string? _error;
+    int _players, _activities, _pois;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            Guid? orgId = null;
+            var user = Http.HttpContext?.User;
+            if (!AdminPrincipal.IsSuperAdmin(user))
+            {
+                var orgClaim = user?.FindFirst(AdminClaimTypes.OrganizationId)?.Value;
+                if (Guid.TryParse(orgClaim, out var oid))
+                    orgId = oid;
+            }
+
+            var activities = await Api.GetActivitiesAsync() ?? [];
+            if (orgId is Guid filterOrg)
+                activities = activities.Where(a => a.OrganizationId == filterOrg).ToList();
+
+            _players = (await Api.GetUsersAsync(orgId))?.Count ?? 0;
+            _activities = activities.Count;
+            _pois = (await Api.GetPoisAsync(orgId))?.Count ?? 0;
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+}

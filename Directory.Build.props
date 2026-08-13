@@ -1,0 +1,6 @@
+<Project>
+  <PropertyGroup>
+    <!-- User-writable SDK (Program Files requires admin for API 37+) -->
+    <AndroidSdkDirectory Condition="'$(AndroidSdkDirectory)' == ''">$(LOCALAPPDATA)\Android\Sdk</AndroidSdkDirectory>
+  </PropertyGroup>
+</Project>

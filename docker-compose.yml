@@ -1,0 +1,16 @@
+services:
+  # Fallback only — prefer: dotnet run --project src/GincanaHud.AppHost
+  db:
+    image: postgres:17-alpine
+    container_name: gincanahud-db
+    environment:
+      POSTGRES_USER: gincana
+      POSTGRES_PASSWORD: gincana
+      POSTGRES_DB: gincanahud
+    ports:
+      - "5432:5432"
+    volumes:
+      - gincanahud_pgdata:/var/lib/postgresql/data
+
+volumes:
+  gincanahud_pgdata:

@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:GincanaHud.App.ViewModels"
+             x:Class="GincanaHud.App.MainPage"
+             x:DataType="vm:SensorDebugViewModel"
+             Title="Sensores">
+
+    <Grid Padding="24" RowDefinitions="Auto,Auto,*,Auto" RowSpacing="16">
+        <VerticalStackLayout Grid.Row="0" Spacing="4">
+            <Label Text="GincanaHud" FontSize="28" FontAttributes="Bold" />
+            <Label Text="Fase 2 — debug GPS / brújula" Opacity="0.7" />
+        </VerticalStackLayout>
+
+        <Border Grid.Row="1" StrokeThickness="1" Padding="16">
+            <Border.StrokeShape>
+                <RoundRectangle CornerRadius="8" />
+            </Border.StrokeShape>
+            <VerticalStackLayout Spacing="10">
+                <Label Text="{$'Lat: {Latitude:F6}'}" FontFamily="OpenSansSemibold" FontSize="18" />
+                <Label Text="{$'Lon: {Longitude:F6}'}" FontFamily="OpenSansSemibold" FontSize="18" />
+                <Label Text="{$'Precisión: {AccuracyMeters:F1} m'}" />
+                <Label Text="{$'Rumbo: {HeadingDegrees:F1}°'}" FontSize="18" />
+                <Label Text="{Status}" Opacity="0.8" />
+            </VerticalStackLayout>
+        </Border>
+
+        <Label Grid.Row="2"
+               Text="Pulsa Iniciar en un dispositivo real (o emulador con ubicación). El HUD llega en Fase 3."
+               VerticalOptions="Start"
+               Opacity="0.65" />
+
+        <Button Grid.Row="3"
+                Text="{IsRunning ? 'Detener' : 'Iniciar sensores'}"
+                Command="{ToggleCommand}"
+                HorizontalOptions="Fill" />
+    </Grid>
+
+</ContentPage>

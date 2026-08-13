@@ -1,0 +1,19 @@
+bin/
+obj/
+.vs/
+*.user
+*.db
+*.db-shm
+*.db-wal
+appsettings.Development.json
+!appsettings.json
+.DS_Store
+
+# Local IDE / tooling (not part of the product)
+.cursor/
+.cursorignore
+AGENTS.md
+
+# Build noise
+build-hud.txt
+*.log

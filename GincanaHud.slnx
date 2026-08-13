@@ -1,0 +1,9 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/GincanaHud.Admin/GincanaHud.Admin.csproj" />
+    <Project Path="src/GincanaHud.Api/GincanaHud.Api.csproj" />
+    <Project Path="src/GincanaHud.AppHost/GincanaHud.AppHost.csproj" />
+    <Project Path="src/GincanaHud.ServiceDefaults/GincanaHud.ServiceDefaults.csproj" />
+    <Project Path="src/GincanaHud.Shared/GincanaHud.Shared.csproj" />
+  </Folder>
+</Solution>

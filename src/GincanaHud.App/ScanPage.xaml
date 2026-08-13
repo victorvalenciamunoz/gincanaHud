@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:zxing="clr-namespace:ZXing.Net.Maui.Controls;assembly=ZXing.Net.Maui.Controls"
+             x:Class="GincanaHud.App.ScanPage"
+             Title="Escanear QR"
+             BackgroundColor="#0F1419">
+
+    <Grid>
+        <!-- IsDetecting off hasta OnAppearing (evita crash al construir la página). -->
+        <zxing:CameraBarcodeReaderView x:Name="Camera"
+                                       IsDetecting="False"
+                                       BarcodesDetected="OnBarcodesDetected"
+                                       HorizontalOptions="Fill"
+                                       VerticalOptions="Fill" />
+        <VerticalStackLayout VerticalOptions="Start"
+                             Padding="16,48,16,0"
+                             Spacing="8">
+            <Label Text="Apunta al QR del cartel"
+                   TextColor="White"
+                   HorizontalOptions="Center" />
+            <Label x:Name="Hint"
+                   Text=""
+                   TextColor="#FF8E8E"
+                   HorizontalOptions="Center"
+                   HorizontalTextAlignment="Center" />
+        </VerticalStackLayout>
+        <Button Text="Cancelar"
+                Clicked="OnCancelClicked"
+                VerticalOptions="End"
+                Margin="16"
+                BackgroundColor="#334155"
+                TextColor="White" />
+    </Grid>
+</ContentPage>

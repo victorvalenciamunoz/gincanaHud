@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="456" height="456" viewBox="0 0 456 456" xmlns="http://www.w3.org/2000/svg">
+  <!-- Fondo oscuro táctico -->
+  <rect width="456" height="456" fill="#0B1218"/>
+  <!-- Diamond HUD -->
+  <path d="M228 72 L384 228 L228 384 L72 228 Z"
+        fill="none" stroke="#7CFFB2" stroke-width="14" stroke-linejoin="round"/>
+  <path d="M228 118 L338 228 L228 338 L118 228 Z"
+        fill="none" stroke="#1F6F4A" stroke-width="8" opacity="0.9"/>
+  <!-- Retícula -->
+  <circle cx="228" cy="228" r="22" fill="#7CFFB2"/>
+  <circle cx="228" cy="228" r="10" fill="#0B1218"/>
+  <line x1="228" y1="150" x2="228" y2="188" stroke="#E8EEF4" stroke-width="6" stroke-linecap="round"/>
+  <line x1="228" y1="268" x2="228" y2="306" stroke="#E8EEF4" stroke-width="6" stroke-linecap="round"/>
+  <line x1="150" y1="228" x2="188" y2="228" stroke="#E8EEF4" stroke-width="6" stroke-linecap="round"/>
+  <line x1="268" y1="228" x2="306" y2="228" stroke="#E8EEF4" stroke-width="6" stroke-linecap="round"/>
+</svg>

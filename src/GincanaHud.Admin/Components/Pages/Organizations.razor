@@ -1,0 +1,76 @@
+@page "/organizations"
+@attribute [Authorize]
+@rendermode InteractiveServer
+@inject AdminApiClient Api
+@inject IHttpContextAccessor Http
+@inject NavigationManager Nav
+
+<PageTitle>Organizaciones</PageTitle>
+<h1>Organizaciones</h1>
+<p class="page-lead">Quién organiza las gincanas (empresa, fiestas del pueblo…).</p>
+
+<div class="form-row">
+    <input @bind="_name" placeholder="Nombre" />
+    <button @onclick="CreateAsync" disabled="@_busy">Crear</button>
+</div>
+
+@if (!string.IsNullOrEmpty(_message)) { <p>@_message</p> }
+
+@if (_items is null)
+{
+    <p>Cargando…</p>
+}
+else
+{
+    <table>
+        <thead><tr><th>Nombre</th><th>Id</th><th>Creada</th></tr></thead>
+        <tbody>
+        @foreach (var o in _items)
+        {
+            <tr>
+                <td>@o.Name</td>
+                <td class="mono">@o.Id</td>
+                <td>@o.CreatedAt.ToLocalTime().ToString("g")</td>
+            </tr>
+        }
+        </tbody>
+    </table>
+}
+
+@code {
+    List<OrganizationDto>? _items;
+    string _name = "";
+    string? _message;
+    bool _busy;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!AdminPrincipal.IsSuperAdmin(Http))
+        {
+            Nav.NavigateTo("/");
+            return;
+        }
+        await ReloadAsync();
+    }
+
+    async Task ReloadAsync()
+    {
+        try { _items = await Api.GetOrganizationsAsync() ?? []; }
+        catch (Exception ex) { _message = ex.Message; }
+    }
+
+    async Task CreateAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_name)) return;
+        _busy = true;
+        try
+        {
+            await Api.CreateOrganizationAsync(_name.Trim());
+            _name = "";
+            _message = "Organización creada.";
+            await ReloadAsync();
+        }
+        catch (Exception ex) { _message = ex.Message; }
+        finally { _busy = false; }
+    }
+}

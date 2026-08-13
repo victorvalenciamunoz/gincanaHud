@@ -1,0 +1,48 @@
+@page "/login"
+@layout EmptyLayout
+@attribute [AllowAnonymous]
+
+<PageTitle>Login — Admin</PageTitle>
+
+<h1>Entrar</h1>
+<p class="page-lead">
+    SuperAdmin o admin de empresa.
+</p>
+
+@if (_failed)
+{
+    <p class="error">Usuario o contraseña incorrectos (o la API no está lista).</p>
+}
+
+<form method="post" action="/account/login" class="form-stack">
+    <AntiforgeryToken />
+    <input type="hidden" name="returnUrl" value="@_returnUrl" />
+    <div class="field">
+        <label for="username">Usuario</label>
+        <input id="username" name="username" autocomplete="username" required autofocus />
+    </div>
+    <div class="field">
+        <label for="password">Contraseña</label>
+        <input id="password" name="password" type="password" autocomplete="current-password" required />
+    </div>
+    <button type="submit">Entrar</button>
+</form>
+
+@code {
+    [SupplyParameterFromQuery(Name = "failed")]
+    public bool? Failed { get; set; }
+
+    [SupplyParameterFromQuery(Name = "returnUrl")]
+    public string? ReturnUrl { get; set; }
+
+    bool _failed;
+    string _returnUrl = "/";
+
+    protected override void OnParametersSet()
+    {
+        _failed = Failed == true;
+        _returnUrl = string.IsNullOrWhiteSpace(ReturnUrl) || !ReturnUrl.StartsWith('/')
+            ? "/"
+            : ReturnUrl;
+    }
+}

@@ -1,0 +1,145 @@
+@page "/users"
+@attribute [Authorize]
+@rendermode InteractiveServer
+@inject AdminApiClient Api
+@inject IHttpContextAccessor Http
+
+<PageTitle>Jugadores</PageTitle>
+<h1>Jugadores</h1>
+<p class="page-lead">
+    @if (_isSuper)
+    {
+        <text>Todos los jugadores de la plataforma. Los de empresa aparecen al unirse a una actividad.</text>
+    }
+    else
+    {
+        <text>Jugadores unidos a actividades de <strong>@_orgName</strong> (nombre y contacto para premios).</text>
+    }
+</p>
+
+@if (_isSuper)
+{
+    <div class="form-row">
+        <input @bind="_name" placeholder="Nombre de jugador (alta manual)" />
+        <button @onclick="CreateAsync" disabled="@_busy">Crear / obtener</button>
+        <button type="button" class="btn-danger" @onclick="ClearPlayersAsync" disabled="@_busy"
+                title="Borra capturas, inscripciones y usuarios jugadores. No toca orgs, actividades ni admins.">
+            Vaciar jugadores
+        </button>
+    </div>
+}
+
+@if (!string.IsNullOrEmpty(_message))
+{
+    <p>@_message</p>
+}
+
+@if (_players is null)
+{
+    <p>Cargando…</p>
+}
+else if (_players.Count == 0)
+{
+    <p class="page-lead">Aún no hay jugadores@( _isSuper ? "." : " en tus actividades. Cuando se unan con el código/QR aparecerán aquí." )</p>
+}
+else
+{
+    <table>
+        <thead>
+            <tr>
+                <th>Nombre</th>
+                <th>Contacto</th>
+                <th>Actividades</th>
+                <th>Alta</th>
+            </tr>
+        </thead>
+        <tbody>
+        @foreach (var u in _players)
+        {
+            <tr>
+                <td>@u.DisplayName</td>
+                <td>@(u.ContactEmail ?? u.ContactPhone ?? "—")</td>
+                <td>
+                    @if (u.Activities.Count == 0)
+                    {
+                        <span>—</span>
+                    }
+                    else
+                    {
+                        @string.Join(", ", u.Activities.Select(a => a.ActivityTitle))
+                    }
+                </td>
+                <td>@u.CreatedAt.ToLocalTime().ToString("g")</td>
+            </tr>
+        }
+        </tbody>
+    </table>
+}
+
+@code {
+    List<PlayerDto>? _players;
+    string _name = "";
+    string? _message;
+    string _orgName = "";
+    Guid? _orgId;
+    bool _isSuper;
+    bool _busy;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var user = Http.HttpContext?.User;
+        _isSuper = AdminPrincipal.IsSuperAdmin(user);
+        if (!_isSuper)
+        {
+            var orgClaim = user?.FindFirst(AdminClaimTypes.OrganizationId)?.Value;
+            if (!Guid.TryParse(orgClaim, out var oid))
+            {
+                _message = "Tu cuenta no tiene organización asignada.";
+                _players = [];
+                return;
+            }
+            _orgId = oid;
+            _orgName = user?.FindFirst(AdminClaimTypes.OrganizationName)?.Value ?? "tu empresa";
+        }
+
+        await ReloadAsync();
+    }
+
+    async Task ReloadAsync()
+    {
+        try { _players = await Api.GetUsersAsync(_orgId) ?? []; }
+        catch (Exception ex) { _message = ex.Message; }
+    }
+
+    async Task CreateAsync()
+    {
+        if (!_isSuper || string.IsNullOrWhiteSpace(_name)) return;
+        _busy = true;
+        try
+        {
+            var user = await Api.UpsertUserAsync(_name.Trim());
+            _message = user is null ? "Sin respuesta" : $"OK: {user.DisplayName}";
+            _name = "";
+            await ReloadAsync();
+        }
+        catch (Exception ex) { _message = ex.Message; }
+        finally { _busy = false; }
+    }
+
+    async Task ClearPlayersAsync()
+    {
+        if (!_isSuper) return;
+        _busy = true;
+        try
+        {
+            var result = await Api.ClearPlayersAsync();
+            _message = result is null
+                ? "Sin respuesta al vaciar."
+                : $"Vacío: {result.UsersDeleted} jugadores, {result.ParticipantsDeleted} inscripciones, {result.CapturesDeleted} capturas.";
+            await ReloadAsync();
+        }
+        catch (Exception ex) { _message = ex.Message; }
+        finally { _busy = false; }
+    }
+}
+

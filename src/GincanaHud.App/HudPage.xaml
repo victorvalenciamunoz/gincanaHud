@@ -1,0 +1,212 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
+             xmlns:vm="clr-namespace:GincanaHud.App.ViewModels"
+             x:Class="GincanaHud.App.HudPage"
+             x:DataType="vm:HudViewModel"
+             Title="HUD"
+             NavigationPage.HasNavigationBar="False"
+             BackgroundColor="#0B1218">
+
+    <Grid>
+        <toolkit:CameraView x:Name="Camera"
+                            CameraFlashMode="Off"
+                            HorizontalOptions="Fill"
+                            VerticalOptions="Fill" />
+
+        <GraphicsView x:Name="HudCanvas"
+                      Drawable="{Binding Drawable}"
+                      InputTransparent="True"
+                      HorizontalOptions="Fill"
+                      VerticalOptions="Fill" />
+
+        <Border Margin="14,48,14,0"
+                Padding="12,10"
+                VerticalOptions="Start"
+                StrokeThickness="1"
+                Stroke="#8899AA"
+                BackgroundColor="#E60B1218">
+            <Border.StrokeShape>
+                <RoundRectangle CornerRadius="10" />
+            </Border.StrokeShape>
+            <VerticalStackLayout Spacing="2">
+                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                    <VerticalStackLayout Spacing="2" VerticalOptions="Center">
+                        <HorizontalStackLayout Spacing="10" VerticalOptions="Center">
+                            <Label Text="GincanaHud"
+                                   FontFamily="ChakraPetchBold"
+                                   TextColor="#7CFFB2"
+                                   FontSize="18"
+                                   CharacterSpacing="1.2"
+                                   VerticalOptions="Center" />
+                            <!-- Wi‑Fi: verde=OK, ámbar=sin API, rojo=sin red. Tap → detalle. -->
+                            <Path Fill="{$'{LinkColor}'}"
+                                  Aspect="Uniform"
+                                  WidthRequest="22"
+                                  HeightRequest="22"
+                                  VerticalOptions="Center"
+                                  SemanticProperties.Description="{$'{LinkDetail}'}"
+                                  Data="M12,21 L15.6,16.2 C14.6,15.45 13.35,15 12,15 C10.65,15 9.4,15.45 8.4,16.2 Z M12,3 C7.95,3 4.21,4.34 1.2,6.6 L3,9 C5.5,7.12 8.62,6 12,6 C15.38,6 18.5,7.12 21,9 L22.8,6.6 C19.79,4.34 16.05,3 12,3 Z M12,9 C9.3,9 6.81,9.89 4.8,11.4 L6.6,13.8 C8.1,12.67 9.97,12 12,12 C14.03,12 15.9,12.67 17.4,13.8 L19.2,11.4 C17.19,9.89 14.7,9 12,9 Z">
+                                <Path.GestureRecognizers>
+                                    <TapGestureRecognizer Command="{ToggleLinkDetailCommand}" />
+                                </Path.GestureRecognizers>
+                            </Path>
+                        </HorizontalStackLayout>
+                        <Label Text="{$'{TargetLabel}'}"
+                               FontFamily="ChakraPetch"
+                               TextColor="#C5D0DB"
+                               FontSize="12"
+                               LineBreakMode="TailTruncation"
+                               Opacity="0.9" />
+                    </VerticalStackLayout>
+
+                    <Border Grid.Column="1"
+                            IsVisible="{HasProgress}"
+                            WidthRequest="52"
+                            HeightRequest="52"
+                            Padding="0"
+                            StrokeThickness="0"
+                            BackgroundColor="Transparent"
+                            VerticalOptions="Center"
+                            SemanticProperties.Hint="Progreso de la ruta">
+                        <Border.GestureRecognizers>
+                            <TapGestureRecognizer Command="{ToggleProgressDetailCommand}" />
+                        </Border.GestureRecognizers>
+                        <Grid>
+                            <GraphicsView x:Name="ProgressRingView"
+                                          Drawable="{Binding ProgressRing}"
+                                          InputTransparent="True"
+                                          WidthRequest="52"
+                                          HeightRequest="52" />
+                            <Label Text="{ProgressText}"
+                                   FontFamily="ChakraPetchBold"
+                                   TextColor="#E8EEF4"
+                                   FontSize="11"
+                                   HorizontalOptions="Center"
+                                   VerticalOptions="Center"
+                                   InputTransparent="True" />
+                        </Grid>
+                    </Border>
+                </Grid>
+
+                <Border IsVisible="{LinkDetailVisible}"
+                        Padding="8,5"
+                        Margin="0,4,0,0"
+                        StrokeThickness="1"
+                        Stroke="#5A6A7A"
+                        BackgroundColor="#66101820"
+                        InputTransparent="True">
+                    <Border.StrokeShape>
+                        <RoundRectangle CornerRadius="6" />
+                    </Border.StrokeShape>
+                    <Label Text="{$'{LinkDetail}'}"
+                           TextColor="#C5D0DB"
+                           FontSize="13"
+                           HorizontalTextAlignment="Center" />
+                </Border>
+
+                <Border IsVisible="{ProgressDetailVisible}"
+                        Padding="8,5"
+                        Margin="0,4,0,0"
+                        StrokeThickness="1"
+                        Stroke="#5A6A7A"
+                        BackgroundColor="#66101820"
+                        InputTransparent="True">
+                    <Border.StrokeShape>
+                        <RoundRectangle CornerRadius="6" />
+                    </Border.StrokeShape>
+                    <Label Text="{$'{ProgressDetailText}'}"
+                           TextColor="#C5D0DB"
+                           FontSize="13"
+                           HorizontalTextAlignment="Center" />
+                </Border>
+
+                <Border IsVisible="{Clue != ''}"
+                        Padding="10,8"
+                        Margin="0,6,0,0"
+                        StrokeThickness="2"
+                        Stroke="#E8EEF4"
+                        BackgroundColor="#F20B1218"
+                        InputTransparent="True">
+                    <Border.StrokeShape>
+                        <RoundRectangle CornerRadius="8" />
+                    </Border.StrokeShape>
+                    <VerticalStackLayout Spacing="4">
+                        <Label Text="PISTA"
+                               FontFamily="ChakraPetchBold"
+                               TextColor="#A8FFD0"
+                               FontSize="11"
+                               CharacterSpacing="1.5" />
+                        <Label Text="{$'{Clue}'}"
+                               FontFamily="ChakraPetchBold"
+                               TextColor="#FFFFFF"
+                               FontSize="16"
+                               LineBreakMode="WordWrap" />
+                    </VerticalStackLayout>
+                </Border>
+            </VerticalStackLayout>
+        </Border>
+
+        <Grid Padding="14,14,14,22"
+              VerticalOptions="End">
+            <Border Stroke="{IsRunning ? '#FF8A8A' : '#7CFFB2'}"
+                    StrokeThickness="1.5"
+                    BackgroundColor="Transparent"
+                    Padding="0">
+                <Border.StrokeShape>
+                    <RoundRectangle CornerRadius="12" />
+                </Border.StrokeShape>
+                <Button Text="{IsRunning ? 'DETENER' : 'INICIAR'}"
+                        Command="{ToggleCommand}"
+                        BackgroundColor="{IsRunning ? '#5C1F1F' : '#1F6F4A'}"
+                        TextColor="White"
+                        FontFamily="ChakraPetchBold"
+                        FontSize="17"
+                        CharacterSpacing="2"
+                        CornerRadius="11"
+                        HeightRequest="52"
+                        Margin="1" />
+            </Border>
+        </Grid>
+
+        <!-- Cortinilla Unirse → HUD / cold start -->
+        <Grid x:Name="IntroOverlay"
+              IsVisible="False"
+              Opacity="1"
+              InputTransparent="False">
+            <Grid.Background>
+                <LinearGradientBrush StartPoint="0,0" EndPoint="0.85,1">
+                    <GradientStop Color="#06141A" Offset="0" />
+                    <GradientStop Color="#0A2A22" Offset="0.45" />
+                    <GradientStop Color="#0B1218" Offset="1" />
+                </LinearGradientBrush>
+            </Grid.Background>
+            <VerticalStackLayout VerticalOptions="Center"
+                                 HorizontalOptions="Center"
+                                 Spacing="10"
+                                 Padding="28">
+                <Label Text="GincanaHud"
+                       FontFamily="ChakraPetchBold"
+                       TextColor="#7CFFB2"
+                       FontSize="36"
+                       CharacterSpacing="1.5"
+                       HorizontalTextAlignment="Center" />
+                <Label Text="MODO JUEGO"
+                       FontFamily="ChakraPetchBold"
+                       TextColor="#E8EEF4"
+                       FontSize="18"
+                       CharacterSpacing="3"
+                       HorizontalTextAlignment="Center" />
+                <Label x:Name="IntroSubtitle"
+                       Text="Preparando cámara y sensores…"
+                       FontFamily="ChakraPetch"
+                       TextColor="#8FA0B0"
+                       FontSize="14"
+                       HorizontalTextAlignment="Center"
+                       Margin="0,8,0,0" />
+            </VerticalStackLayout>
+        </Grid>
+    </Grid>
+
+</ContentPage>

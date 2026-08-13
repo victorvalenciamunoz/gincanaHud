@@ -1,0 +1,82 @@
+@inject IJSRuntime Js
+@implements IAsyncDisposable
+
+<div class="poi-map-wrap">
+    <div id="@_mapId" class="poi-map"></div>
+    <p class="map-hint">Haz clic en el mapa para colocar el nuevo POI.</p>
+</div>
+
+@code {
+    [Parameter] public double CenterLat { get; set; } = 40.4168;
+    [Parameter] public double CenterLon { get; set; } = -3.7038;
+    [Parameter] public int Zoom { get; set; } = 13;
+    [Parameter] public IReadOnlyList<MapPoiMarker>? Pois { get; set; }
+    [Parameter] public EventCallback<(double Lat, double Lon)> LocationPicked { get; set; }
+
+    private readonly string _mapId = $"poi-map-{Guid.NewGuid():N}";
+    private DotNetObjectReference<PoiMap>? _dotNetRef;
+    private bool _ready;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+
+        _dotNetRef = DotNetObjectReference.Create(this);
+        await Js.InvokeVoidAsync("gincanaPoiMap.init", _mapId, _dotNetRef, CenterLat, CenterLon, Zoom);
+        _ready = true;
+        await RefreshPoisAsync();
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (_ready)
+            await RefreshPoisAsync();
+    }
+
+    public async Task FlyToAsync(double lat, double lon, int zoom = 15)
+    {
+        if (!_ready) return;
+        await Js.InvokeVoidAsync("gincanaPoiMap.flyTo", _mapId, lat, lon, zoom);
+        await Js.InvokeVoidAsync("gincanaPoiMap.setPick", _mapId, lat, lon);
+    }
+
+    public async Task SetPickAsync(double lat, double lon)
+    {
+        if (!_ready) return;
+        await Js.InvokeVoidAsync("gincanaPoiMap.setPick", _mapId, lat, lon);
+    }
+
+    private async Task RefreshPoisAsync()
+    {
+        if (!_ready) return;
+        var payload = (Pois ?? []).Select(p => new
+        {
+            lat = p.Latitude,
+            lon = p.Longitude,
+            name = p.Name,
+            order = p.Order,
+            points = p.Points,
+            radiusMeters = p.RadiusMeters
+        }).ToArray();
+        await Js.InvokeVoidAsync("gincanaPoiMap.setPois", _mapId, payload);
+        await Js.InvokeVoidAsync("gincanaPoiMap.invalidate", _mapId);
+    }
+
+    [JSInvokable]
+    public async Task OnMapClicked(double lat, double lon)
+    {
+        await LocationPicked.InvokeAsync((lat, lon));
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        try
+        {
+            if (_ready)
+                await Js.InvokeVoidAsync("gincanaPoiMap.dispose", _mapId);
+        }
+        catch (JSDisconnectedException) { }
+
+        _dotNetRef?.Dispose();
+    }
+}

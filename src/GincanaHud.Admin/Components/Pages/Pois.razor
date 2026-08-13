@@ -1,0 +1,90 @@
+@page "/pois"
+@rendermode InteractiveServer
+@inject AdminApiClient Api
+@inject IHttpContextAccessor Http
+
+<PageTitle>POIs</PageTitle>
+<h1>Catálogo de POIs</h1>
+<p class="page-lead">Los POIs pertenecen a una organización. Créalos desde una actividad.</p>
+
+@if (!string.IsNullOrEmpty(_error))
+{
+    <p class="error">@_error</p>
+}
+else if (_pois is null)
+{
+    <p>Cargando…</p>
+}
+else if (_pois.Count == 0)
+{
+    <p>Aún no hay POIs@(string.IsNullOrEmpty(_orgLabel) ? "" : $" en {_orgLabel}"). Créalos desde una actividad.</p>
+}
+else
+{
+    <table>
+        <thead>
+            <tr>
+                <th>Nombre</th>
+                @if (_isSuper)
+                {
+                    <th>Org</th>
+                }
+                <th>Lat</th>
+                <th>Lon</th>
+                <th>Radio</th>
+                <th>Pts</th>
+            </tr>
+        </thead>
+        <tbody>
+        @foreach (var p in _pois)
+        {
+            <tr>
+                <td>@p.Name</td>
+                @if (_isSuper)
+                {
+                    <td>@(_orgNames.GetValueOrDefault(p.OrganizationId, "—"))</td>
+                }
+                <td>@p.Latitude.ToString("F5")</td>
+                <td>@p.Longitude.ToString("F5")</td>
+                <td>@p.RadiusMeters</td>
+                <td>@p.DefaultPoints</td>
+            </tr>
+        }
+        </tbody>
+    </table>
+}
+
+@code {
+    List<PoiDto>? _pois;
+    Dictionary<Guid, string> _orgNames = new();
+    string? _error;
+    string? _orgLabel;
+    bool _isSuper;
+    Guid? _orgFilter;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var user = Http.HttpContext?.User;
+            _isSuper = AdminPrincipal.IsSuperAdmin(user);
+            if (!_isSuper)
+            {
+                var orgClaim = user?.FindFirst(AdminClaimTypes.OrganizationId)?.Value;
+                if (Guid.TryParse(orgClaim, out var oid))
+                {
+                    _orgFilter = oid;
+                    _orgLabel = user?.FindFirst(AdminClaimTypes.OrganizationName)?.Value;
+                }
+            }
+            else
+            {
+                var orgs = await Api.GetOrganizationsAsync() ?? [];
+                _orgNames = orgs.ToDictionary(o => o.Id, o => o.Name);
+            }
+
+            _pois = await Api.GetPoisAsync(_orgFilter) ?? [];
+        }
+        catch (Exception ex) { _error = ex.Message; }
+    }
+}

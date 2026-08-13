@@ -1,0 +1,68 @@
+﻿@inherits LayoutComponentBase
+@using GincanaHud.Admin
+@inject IHttpContextAccessor HttpContextAccessor
+
+<div class="admin-shell">
+    <header class="admin-topbar">
+        <input type="checkbox" id="admin-nav-toggle" class="nav-toggle-input" />
+        <label for="admin-nav-toggle" class="nav-toggle" aria-label="Menú">
+            <span class="nav-toggle-bars"></span>
+        </label>
+        <div class="admin-topbar-brand">GincanaHud</div>
+        <a class="admin-topbar-live" href="/live">En vivo</a>
+        <label for="admin-nav-toggle" class="nav-backdrop" aria-hidden="true"></label>
+    </header>
+
+    <nav class="admin-nav">
+        <div class="brand">GincanaHud Admin</div>
+        <NavLink href="/" Match="NavLinkMatch.All">Inicio</NavLink>
+        @if (_isSuper)
+        {
+            <NavLink href="/organizations">Organizaciones</NavLink>
+            <NavLink href="/org-admins">Admins empresa</NavLink>
+        }
+        <NavLink href="/activities">Actividades</NavLink>
+        <NavLink href="/live">En vivo</NavLink>
+        <NavLink href="/pois">POIs</NavLink>
+        <NavLink href="/users">Jugadores</NavLink>
+        <div class="nav-spacer"></div>
+        @if (!string.IsNullOrEmpty(_userName))
+        {
+            <div class="nav-user">
+                @_userName
+                @if (_isSuper)
+                {
+                    <span> · SuperAdmin</span>
+                }
+                else if (!string.IsNullOrEmpty(_orgName))
+                {
+                    <span> · @_orgName</span>
+                }
+            </div>
+        }
+        <a class="nav-logout" href="/account/logout">Salir</a>
+    </nav>
+    <main class="admin-main">
+        @Body
+    </main>
+</div>
+
+<div id="blazor-error-ui" data-nosnippet>
+    Ha ocurrido un error.
+    <a href="." class="reload">Recargar</a>
+    <span class="dismiss">🗙</span>
+</div>
+
+@code {
+    string? _userName;
+    string? _orgName;
+    bool _isSuper;
+
+    protected override void OnParametersSet()
+    {
+        var user = HttpContextAccessor.HttpContext?.User;
+        _userName = user?.Identity?.Name;
+        _isSuper = AdminPrincipal.IsSuperAdmin(user);
+        _orgName = user?.FindFirst(AdminClaimTypes.OrganizationName)?.Value;
+    }
+}

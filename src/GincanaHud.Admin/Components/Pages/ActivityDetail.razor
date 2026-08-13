@@ -1,0 +1,416 @@
+@page "/activities/{Id:guid}"
+@rendermode InteractiveServer
+@inject AdminApiClient Api
+@inject GeocodeService Geocode
+@inject IHttpContextAccessor Http
+@inject NavigationManager Nav
+
+<PageTitle>Actividad</PageTitle>
+
+@if (_detail is null && string.IsNullOrEmpty(_error))
+{
+    <p>Cargando…</p>
+}
+else if (!string.IsNullOrEmpty(_error))
+{
+    <p class="error">@_error</p>
+}
+else if (_detail is not null)
+{
+    <p><a href="/activities">← Actividades</a> · <a href="/live/@Id">En vivo</a></p>
+
+    <h1>Editar actividad</h1>
+    <div class="join-panel">
+        <div class="join-panel-text">
+            <p class="page-lead" style="margin:0">
+                Organización: <strong>@_detail.OrganizationName</strong>
+            </p>
+            <p class="join-code-line">
+                Código: <strong class="mono join-code">@_detail.JoinCode</strong>
+            </p>
+            <p class="page-lead" style="margin:0">
+                Escanea el QR o teclea el mismo código en la app.
+            </p>
+        </div>
+        <img class="join-qr" src="@_qrDataUri" alt="QR @_detail.JoinCode" width="180" height="180" />
+    </div>
+    <div class="form-grid">
+        <input @bind="_title" placeholder="Título" style="min-width:220px;flex:1" />
+        <input @bind="_description" placeholder="Descripción" style="min-width:280px;flex:2" />
+        <input type="datetime-local" @bind="_startsLocal" />
+        <input type="datetime-local" @bind="_endsLocal" />
+        <select @bind="_routeMode">
+            <option value="Sequential">Ruta secuencial (1→2→3)</option>
+            <option value="Free">Ruta libre (salteada)</option>
+        </select>
+        <label class="check">
+            <input type="checkbox" @bind="_isActive" /> Activa
+        </label>
+        <button @onclick="SaveAsync" disabled="@_busy">Guardar</button>
+    </div>
+    @if (!string.IsNullOrEmpty(_message)) { <p>@_message</p> }
+
+    <h2>Mapa — colocar / mover POI</h2>
+    <div class="form-row">
+        <input @bind="_search" @bind:event="oninput" placeholder="Buscar lugar (ej. León, España)" style="min-width:260px;flex:1" />
+        <button type="button" @onclick="SearchPlaceAsync" disabled="@_busy">Ir al mapa</button>
+    </div>
+    @if (_hits is { Count: > 0 })
+    {
+        <ul class="geo-hits">
+            @foreach (var hit in _hits)
+            {
+                <li>
+                    <button type="button" class="linkish" @onclick="() => GoToHitAsync(hit)">@hit.DisplayName</button>
+                </li>
+            }
+        </ul>
+    }
+
+    <PoiMap @ref="_map"
+            CenterLat="@_mapLat"
+            CenterLon="@_mapLon"
+            Zoom="13"
+            Pois="_mapPois"
+            LocationPicked="OnPickedAsync" />
+
+    <h2>@(_editingPoiId is null ? "Nuevo POI" : "Editar POI")</h2>
+    <div class="form-grid">
+        <input @bind="_poiName" placeholder="Nombre" />
+        <input @bind="_lat" placeholder="Latitud" />
+        <input @bind="_lon" placeholder="Longitud" />
+        <input @bind="_radius" placeholder="Radio (m)" />
+        <input @bind="_points" placeholder="Puntos" />
+        <input @bind="_order" placeholder="Orden" style="min-width:80px" />
+        <input @bind="_clue" placeholder="Pista" style="min-width:220px;flex:1" />
+        @if (_editingPoiId is null)
+        {
+            <button @onclick="AddPoiAsync" disabled="@_busy">Añadir POI</button>
+        }
+        else
+        {
+            <button @onclick="UpdatePoiAsync" disabled="@_busy">Guardar POI</button>
+            <button type="button" class="btn-muted" @onclick="CancelEdit" disabled="@_busy">Cancelar</button>
+        }
+    </div>
+
+    <h2>POIs de la actividad</h2>
+    @if (_detail.Pois.Count == 0)
+    {
+        <p>Ninguno todavía. Usa el mapa o el formulario.</p>
+    }
+    else
+    {
+        <table>
+            <thead><tr><th>#</th><th>Nombre</th><th>Lat</th><th>Lon</th><th>Radio</th><th>Pts</th><th>Pista</th><th></th></tr></thead>
+            <tbody>
+            @foreach (var p in _detail.Pois)
+            {
+                <tr class="@(_editingPoiId == p.PoiId ? "row-selected" : null)">
+                    <td>@p.Order</td>
+                    <td>@p.Name</td>
+                    <td>@p.Latitude.ToString("F5")</td>
+                    <td>@p.Longitude.ToString("F5")</td>
+                    <td>@p.RadiusMeters</td>
+                    <td>@p.Points</td>
+                    <td>@(p.Clue ?? "—")</td>
+                    <td class="row-actions">
+                        <button type="button" class="linkish" @onclick="() => BeginEdit(p)" disabled="@_busy">Editar</button>
+                        <button type="button" class="linkish danger" @onclick="() => RemovePoiAsync(p)" disabled="@_busy">Quitar</button>
+                    </td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    }
+
+    <h2>Orden de llegada (meta)</h2>
+    @if (_ranking is null || _ranking.Count == 0)
+    {
+        <p>Sin capturas todavía.</p>
+    }
+    else
+    {
+        <table>
+            <thead><tr><th>#</th><th>Jugador</th><th>Contacto</th><th>Meta</th><th>Progreso</th></tr></thead>
+            <tbody>
+            @{
+                var place = 0;
+            }
+            @foreach (var r in _ranking)
+            {
+                var isFinisher = r.FinishedAt is not null;
+                if (isFinisher) place++;
+                <tr>
+                    <td>@(isFinisher ? place.ToString() : "—")</td>
+                    <td>@r.DisplayName</td>
+                    <td>@(r.ContactEmail ?? r.ContactPhone ?? "—")</td>
+                    <td>@(r.FinishedAt?.ToLocalTime().ToString("HH:mm:ss") ?? "en ruta")</td>
+                    <td>@r.CaptureCount capturas</td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    }
+}
+
+@code {
+    [Parameter] public Guid Id { get; set; }
+
+    ActivityDetailDto? _detail;
+    List<RankingEntryDto>? _ranking;
+    List<MapPoiMarker> _mapPois = [];
+    string? _error;
+    string? _message;
+    string? _qrDataUri;
+    bool _busy;
+    Guid? _editingPoiId;
+
+    string _title = "";
+    string _description = "";
+    bool _isActive = true;
+    string _routeMode = nameof(ActivityRouteMode.Sequential);
+    DateTime _startsLocal = DateTime.Now;
+    DateTime _endsLocal = DateTime.Now.AddDays(1);
+
+    string _search = "";
+    List<GeocodeHit>? _hits;
+    PoiMap? _map;
+    double _mapLat = 40.4168;
+    double _mapLon = -3.7038;
+
+    string _poiName = "";
+    string _lat = "";
+    string _lon = "";
+    string _radius = "25";
+    string _points = "100";
+    string _order = "1";
+    string _clue = "";
+
+    protected override async Task OnParametersSetAsync() => await ReloadAsync();
+
+    async Task ReloadAsync()
+    {
+        try
+        {
+            _detail = await Api.GetActivityAsync(Id);
+            if (_detail is null)
+            {
+                _error = "Actividad no encontrada.";
+                return;
+            }
+
+            var user = Http.HttpContext?.User;
+            if (user is not null && !AdminPrincipal.IsSuperAdmin(user))
+            {
+                var orgClaim = user.FindFirst(AdminClaimTypes.OrganizationId)?.Value;
+                if (!Guid.TryParse(orgClaim, out var oid) || _detail.OrganizationId != oid)
+                {
+                    _detail = null;
+                    _error = "No tienes acceso a esta actividad.";
+                    return;
+                }
+            }
+
+            _ranking = await Api.GetRankingAsync(Id) ?? [];
+
+            _error = null;
+            _qrDataUri = JoinQrGenerator.ToPngDataUri(_detail.JoinCode);
+            _title = _detail.Title;
+            _description = _detail.Description;
+            _isActive = _detail.IsActive;
+            _routeMode = _detail.RouteMode.ToString();
+            _startsLocal = _detail.StartsAt.ToLocalTime().DateTime;
+            _endsLocal = _detail.EndsAt.ToLocalTime().DateTime;
+            _mapPois = _detail.Pois.Select(p => new MapPoiMarker(
+                p.Name, p.Order, p.Latitude, p.Longitude, p.RadiusMeters, p.Points)).ToList();
+
+            if (_detail.Pois.Count > 0)
+            {
+                _mapLat = _detail.Pois.Average(p => p.Latitude);
+                _mapLon = _detail.Pois.Average(p => p.Longitude);
+            }
+
+            if (_editingPoiId is Guid editId && _detail.Pois.All(p => p.PoiId != editId))
+                ClearPoiForm();
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+        }
+    }
+
+    async Task OnPickedAsync((double Lat, double Lon) point)
+    {
+        _lat = point.Lat.ToString("F6", System.Globalization.CultureInfo.InvariantCulture);
+        _lon = point.Lon.ToString("F6", System.Globalization.CultureInfo.InvariantCulture);
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task SearchPlaceAsync()
+    {
+        _busy = true;
+        try
+        {
+            _hits = (await Geocode.SearchAsync(_search)).ToList();
+            if (_hits.Count == 1)
+                await GoToHitAsync(_hits[0]);
+            else if (_hits.Count == 0)
+                _message = "Sin resultados. Prueba «León, España».";
+        }
+        catch (Exception ex) { _message = $"Geocoding: {ex.Message}"; }
+        finally { _busy = false; }
+    }
+
+    async Task GoToHitAsync(GeocodeHit hit)
+    {
+        _mapLat = hit.Latitude;
+        _mapLon = hit.Longitude;
+        _lat = hit.Latitude.ToString("F6", System.Globalization.CultureInfo.InvariantCulture);
+        _lon = hit.Longitude.ToString("F6", System.Globalization.CultureInfo.InvariantCulture);
+        if (string.IsNullOrWhiteSpace(_poiName))
+            _poiName = hit.DisplayName.Split(',')[0].Trim();
+        if (_map is not null)
+            await _map.FlyToAsync(hit.Latitude, hit.Longitude);
+        _hits = null;
+    }
+
+    async Task BeginEdit(ActivityPoiDto p)
+    {
+        _editingPoiId = p.PoiId;
+        _poiName = p.Name;
+        _lat = p.Latitude.ToString("F6", System.Globalization.CultureInfo.InvariantCulture);
+        _lon = p.Longitude.ToString("F6", System.Globalization.CultureInfo.InvariantCulture);
+        _radius = p.RadiusMeters.ToString(System.Globalization.CultureInfo.InvariantCulture);
+        _points = p.Points.ToString();
+        _order = p.Order.ToString();
+        _clue = p.Clue ?? "";
+        _message = $"Editando «{p.Name}». Clic en el mapa para mover.";
+        if (_map is not null)
+            await _map.FlyToAsync(p.Latitude, p.Longitude, 16);
+    }
+
+    void CancelEdit()
+    {
+        ClearPoiForm();
+        _message = null;
+    }
+
+    void ClearPoiForm()
+    {
+        _editingPoiId = null;
+        _poiName = _clue = "";
+        _lat = _lon = "";
+        _radius = "25";
+        _points = "100";
+        _order = ((_detail?.Pois.Count ?? 0) + 1).ToString();
+    }
+
+    async Task SaveAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_title))
+        {
+            _message = "El título es obligatorio.";
+            return;
+        }
+
+        _busy = true;
+        try
+        {
+            var mode = Enum.TryParse<ActivityRouteMode>(_routeMode, out var rm)
+                ? rm
+                : ActivityRouteMode.Sequential;
+            await Api.UpdateActivityAsync(Id, new UpdateActivityRequest(
+                _title.Trim(),
+                _description.Trim(),
+                _isActive,
+                new DateTimeOffset(_startsLocal, TimeZoneInfo.Local.GetUtcOffset(_startsLocal)),
+                new DateTimeOffset(_endsLocal, TimeZoneInfo.Local.GetUtcOffset(_endsLocal)),
+                mode));
+            _message = "Actividad guardada.";
+            await ReloadAsync();
+        }
+        catch (Exception ex) { _message = ex.Message; }
+        finally { _busy = false; }
+    }
+
+    bool TryReadPoiFields(out double lat, out double lon, out double radius, out int points, out int order)
+    {
+        lat = lon = radius = 0;
+        points = order = 0;
+        if (!double.TryParse(_lat, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out lat)
+            || !double.TryParse(_lon, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out lon))
+        {
+            _message = "Haz clic en el mapa o introduce Lat/Lon (punto decimal).";
+            return false;
+        }
+
+        _ = double.TryParse(_radius, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out radius);
+        _ = int.TryParse(_points, out points);
+        _ = int.TryParse(_order, out order);
+        return true;
+    }
+
+    async Task AddPoiAsync()
+    {
+        if (!TryReadPoiFields(out var lat, out var lon, out var radius, out var points, out _))
+            return;
+
+        _busy = true;
+        try
+        {
+            await Api.AddPoiAsync(Id, new CreatePoiRequest(
+                _detail!.OrganizationId,
+                string.IsNullOrWhiteSpace(_poiName) ? "POI" : _poiName.Trim(),
+                lat, lon,
+                radius > 0 ? radius : 25,
+                string.IsNullOrWhiteSpace(_clue) ? "Sin pista." : _clue.Trim(),
+                points > 0 ? points : 100));
+            _message = "POI añadido.";
+            ClearPoiForm();
+            await ReloadAsync();
+        }
+        catch (Exception ex) { _message = ex.Message; }
+        finally { _busy = false; }
+    }
+
+    async Task UpdatePoiAsync()
+    {
+        if (_editingPoiId is not Guid poiId)
+            return;
+        if (!TryReadPoiFields(out var lat, out var lon, out var radius, out var points, out var order))
+            return;
+
+        _busy = true;
+        try
+        {
+            await Api.UpdatePoiAsync(Id, poiId, new UpdateActivityPoiRequest(
+                string.IsNullOrWhiteSpace(_poiName) ? "POI" : _poiName.Trim(),
+                lat, lon,
+                radius > 0 ? radius : 25,
+                string.IsNullOrWhiteSpace(_clue) ? "Sin pista." : _clue.Trim(),
+                points > 0 ? points : 100,
+                order > 0 ? order : 1));
+            _message = "POI actualizado.";
+            ClearPoiForm();
+            await ReloadAsync();
+        }
+        catch (Exception ex) { _message = ex.Message; }
+        finally { _busy = false; }
+    }
+
+    async Task RemovePoiAsync(ActivityPoiDto p)
+    {
+        _busy = true;
+        try
+        {
+            await Api.RemovePoiAsync(Id, p.PoiId);
+            _message = $"Quitado «{p.Name}».";
+            if (_editingPoiId == p.PoiId)
+                ClearPoiForm();
+            await ReloadAsync();
+        }
+        catch (Exception ex) { _message = ex.Message; }
+        finally { _busy = false; }
+    }
+}

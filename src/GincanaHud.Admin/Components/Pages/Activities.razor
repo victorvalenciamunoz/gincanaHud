@@ -1,0 +1,168 @@
+@page "/activities"
+@rendermode InteractiveServer
+@inject AdminApiClient Api
+@inject IHttpContextAccessor Http
+
+<PageTitle>Actividades</PageTitle>
+<h1>Actividades</h1>
+
+<div class="form-grid">
+    @if (_isSuper)
+    {
+        <select @bind="_orgId">
+            <option value="">— Organización —</option>
+            @if (_orgs is not null)
+            {
+                @foreach (var o in _orgs)
+                {
+                    <option value="@o.Id">@o.Name</option>
+                }
+            }
+        </select>
+    }
+    else
+    {
+        <span class="page-lead">Org: <strong>@_orgName</strong></span>
+    }
+    <input @bind="_title" placeholder="Título" />
+    <input @bind="_description" placeholder="Descripción" />
+    <input type="datetime-local" @bind="_startsLocal" />
+    <input type="datetime-local" @bind="_endsLocal" />
+    <select @bind="_routeMode">
+        <option value="Sequential">Ruta secuencial</option>
+        <option value="Free">Ruta libre (salteada)</option>
+    </select>
+    <button @onclick="CreateAsync" disabled="@_busy">Crear evento</button>
+</div>
+<p class="page-lead">Secuencial: 1→2→3. Libre: cualquier orden; gana quien complete todos antes. El QR codifica el mismo texto que el código.</p>
+
+@if (!string.IsNullOrEmpty(_message))
+{
+    <p>@_message</p>
+}
+
+@if (_items is null)
+{
+    <p>Cargando…</p>
+}
+else
+{
+    <table>
+        <thead><tr><th>QR</th><th>Título</th><th>Org</th><th>Código</th><th>Modo</th><th>Inicio</th><th>Fin</th><th>Estado</th><th></th></tr></thead>
+        <tbody>
+        @foreach (var a in _items)
+        {
+            <tr>
+                <td>
+                    @if (_qrByCode.TryGetValue(a.JoinCode, out var qr))
+                    {
+                        <a href="@($"/activities/{a.Id}")" title="@a.JoinCode">
+                            <img class="join-qr-thumb" src="@qr" alt="QR @a.JoinCode" width="72" height="72" />
+                        </a>
+                    }
+                </td>
+                <td>@a.Title</td>
+                <td>@(a.OrganizationName ?? "—")</td>
+                <td class="mono">@a.JoinCode</td>
+                <td>@(a.RouteMode == ActivityRouteMode.Free ? "Libre" : "Secuencial")</td>
+                <td>@a.StartsAt.ToLocalTime().ToString("g")</td>
+                <td>@a.EndsAt.ToLocalTime().ToString("g")</td>
+                <td>@(a.IsActive ? "Activa" : "Inactiva")</td>
+                <td><a href="@($"/activities/{a.Id}")">Editar</a></td>
+            </tr>
+        }
+        </tbody>
+    </table>
+}
+
+@code {
+    List<ActivitySummaryDto>? _items;
+    Dictionary<string, string> _qrByCode = new(StringComparer.Ordinal);
+    List<OrganizationDto>? _orgs;
+    string _orgId = "";
+    string _orgName = "";
+    bool _isSuper;
+    Guid? _fixedOrgId;
+    string _title = "";
+    string _description = "";
+    DateTime _startsLocal = DateTime.Now.Date.AddHours(9);
+    DateTime _endsLocal = DateTime.Now.Date.AddHours(20);
+    string _routeMode = nameof(ActivityRouteMode.Sequential);
+    string? _message;
+    bool _busy;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var user = Http.HttpContext?.User;
+        _isSuper = AdminPrincipal.IsSuperAdmin(user);
+        if (!_isSuper)
+        {
+            var orgClaim = user?.FindFirst(AdminClaimTypes.OrganizationId)?.Value;
+            if (Guid.TryParse(orgClaim, out var oid))
+            {
+                _fixedOrgId = oid;
+                _orgId = oid.ToString();
+            }
+            _orgName = user?.FindFirst(AdminClaimTypes.OrganizationName)?.Value ?? "—";
+        }
+
+        await ReloadAsync();
+    }
+
+    async Task ReloadAsync()
+    {
+        try
+        {
+            if (_isSuper)
+                _orgs = await Api.GetOrganizationsAsync() ?? [];
+
+            var all = await Api.GetActivitiesAsync(includeInactive: true) ?? [];
+            _items = _fixedOrgId is Guid oid
+                ? all.Where(a => a.OrganizationId == oid).ToList()
+                : all;
+
+            _qrByCode = _items
+                .GroupBy(a => a.JoinCode, StringComparer.Ordinal)
+                .ToDictionary(
+                    g => g.Key,
+                    g => JoinQrGenerator.ToPngDataUri(g.Key, pixelsPerModule: 4),
+                    StringComparer.Ordinal);
+        }
+        catch (Exception ex) { _message = ex.Message; }
+    }
+
+    async Task CreateAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_title) || !Guid.TryParse(_orgId, out var orgId))
+        {
+            _message = "Elige organización y título.";
+            return;
+        }
+
+        if (_fixedOrgId is Guid fixedId && orgId != fixedId)
+        {
+            _message = "No puedes crear actividades de otra organización.";
+            return;
+        }
+
+        var starts = new DateTimeOffset(_startsLocal, TimeZoneInfo.Local.GetUtcOffset(_startsLocal));
+        var ends = new DateTimeOffset(_endsLocal, TimeZoneInfo.Local.GetUtcOffset(_endsLocal));
+
+        _busy = true;
+        try
+        {
+            var mode = Enum.TryParse<ActivityRouteMode>(_routeMode, out var rm)
+                ? rm
+                : ActivityRouteMode.Sequential;
+            await Api.CreateActivityAsync(new CreateActivityRequest(
+                orgId, _title.Trim(), _description.Trim(), starts, ends, mode));
+            _title = "";
+            _description = "";
+            _routeMode = nameof(ActivityRouteMode.Sequential);
+            _message = "Actividad creada.";
+            await ReloadAsync();
+        }
+        catch (Exception ex) { _message = ex.Message; }
+        finally { _busy = false; }
+    }
+}

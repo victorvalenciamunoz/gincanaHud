@@ -1,0 +1,101 @@
+@page "/org-admins"
+@attribute [Authorize]
+@rendermode InteractiveServer
+@inject AdminApiClient Api
+@inject IHttpContextAccessor Http
+@inject NavigationManager Nav
+
+<PageTitle>Admins de empresa</PageTitle>
+<h1>Admins de empresa</h1>
+<p class="page-lead">Cuentas OrganizationAdmin ligadas a una organización.</p>
+
+<div class="form-grid">
+    <select @bind="_orgId">
+        <option value="">— Organización —</option>
+        @if (_orgs is not null)
+        {
+            @foreach (var o in _orgs)
+            {
+                <option value="@o.Id">@o.Name</option>
+            }
+        }
+    </select>
+    <input @bind="_username" placeholder="Usuario" />
+    <input @bind="_password" type="password" placeholder="Contraseña (mín. 6)" />
+    <button @onclick="CreateAsync" disabled="@_busy">Crear admin</button>
+</div>
+
+@if (!string.IsNullOrEmpty(_message)) { <p>@_message</p> }
+
+@if (_items is null)
+{
+    <p>Cargando…</p>
+}
+else
+{
+    <table>
+        <thead><tr><th>Usuario</th><th>Rol</th><th>Organización</th><th>Activo</th></tr></thead>
+        <tbody>
+        @foreach (var a in _items)
+        {
+            <tr>
+                <td>@a.Username</td>
+                <td>@a.Role</td>
+                <td>@(a.OrganizationName ?? "—")</td>
+                <td>@(a.IsActive ? "Sí" : "No")</td>
+            </tr>
+        }
+        </tbody>
+    </table>
+}
+
+@code {
+    List<AdminUserDto>? _items;
+    List<OrganizationDto>? _orgs;
+    string _orgId = "";
+    string _username = "";
+    string _password = "";
+    string? _message;
+    bool _busy;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!AdminPrincipal.IsSuperAdmin(Http))
+        {
+            Nav.NavigateTo("/");
+            return;
+        }
+        await ReloadAsync();
+    }
+
+    async Task ReloadAsync()
+    {
+        try
+        {
+            _orgs = await Api.GetOrganizationsAsync() ?? [];
+            _items = await Api.GetAdminUsersAsync() ?? [];
+        }
+        catch (Exception ex) { _message = ex.Message; }
+    }
+
+    async Task CreateAsync()
+    {
+        if (!Guid.TryParse(_orgId, out var orgId) || string.IsNullOrWhiteSpace(_username))
+        {
+            _message = "Organización y usuario obligatorios.";
+            return;
+        }
+
+        _busy = true;
+        try
+        {
+            await Api.CreateOrgAdminAsync(new CreateOrgAdminRequest(_username.Trim(), _password, orgId));
+            _username = "";
+            _password = "";
+            _message = "Admin de empresa creado.";
+            await ReloadAsync();
+        }
+        catch (Exception ex) { _message = ex.Message; }
+        finally { _busy = false; }
+    }
+}
