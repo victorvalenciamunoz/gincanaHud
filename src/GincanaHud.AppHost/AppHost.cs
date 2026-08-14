@@ -15,17 +15,19 @@ var builder = DistributedApplication.CreateBuilder(args);
 // Solo se usa en publish/deploy a Azure; el run local sigue con Docker + procesos.
 builder.AddAzureContainerAppEnvironment("aca-env");
 
-// Azure Files (volumen en ACA) no permite el chmod que exige initdb de Postgres.
-// Volumen solo en run local; en publish/deploy los datos son efímeros (vale para demos).
-var postgresServer = builder.AddPostgres("postgres")
-	.WithHostPort(5432);
-
-if (!builder.ExecutionContext.IsPublishMode)
+// Local: Postgres en Docker. Azure: connection string externa (Supabase).
+IResourceBuilder<IResourceWithConnectionString> db;
+if (builder.ExecutionContext.IsPublishMode)
 {
-	postgresServer.WithDataVolume();
+	db = builder.AddConnectionString("gincanahud");
 }
-
-var postgres = postgresServer.AddDatabase("gincanahud");
+else
+{
+	db = builder.AddPostgres("postgres")
+		.WithHostPort(5432)
+		.WithDataVolume()
+		.AddDatabase("gincanahud");
+}
 
 // Dev: user-secrets AppHost Parameters:*. Azure demo: mismos Parameters en aspire deploy.
 var adminUsername = builder.AddParameter("admin-username");
@@ -38,12 +40,21 @@ static void ScaleToZero(Azure.Provisioning.AppContainers.ContainerApp app)
 }
 
 var api = builder.AddProject<Projects.GincanaHud_Api>("api")
-	.WithReference(postgres)
-	.WaitFor(postgres)
+	.WithReference(db)
 	.WithEnvironment("AdminBootstrap__Username", adminUsername)
 	.WithEnvironment("AdminBootstrap__Password", adminPassword)
 	.WithExternalHttpEndpoints()
 	.PublishAsAzureContainerApp((_, app) => ScaleToZero(app));
+
+// Firma JWT: en Azure vía parámetro; en Development la Api tiene fallback local.
+if (builder.ExecutionContext.IsPublishMode)
+{
+	var jwtSigningKey = builder.AddParameter("jwt-signing-key", secret: true);
+	api.WithEnvironment("Jwt__SigningKey", jwtSigningKey);
+}
+
+if (!builder.ExecutionContext.IsPublishMode)
+	api.WaitFor(db);
 
 builder.AddProject<Projects.GincanaHud_Admin>("admin")
 	.WithReference(api)

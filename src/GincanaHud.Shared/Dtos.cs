@@ -152,7 +152,9 @@ public sealed record AdminLoginResponse(
 	string Username,
 	string Role,
 	Guid? OrganizationId,
-	string? OrganizationName);
+	string? OrganizationName,
+	string AccessToken,
+	DateTimeOffset ExpiresAt);
 
 public sealed record AdminUserDto(
 	Guid Id,

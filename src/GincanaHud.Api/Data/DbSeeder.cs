@@ -4,7 +4,10 @@ using GincanaHud.Api.Domain.Organizations;
 using GincanaHud.Api.Domain.Users;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.Options;
+using Npgsql;
 
 namespace GincanaHud.Api.Data;
 
@@ -19,11 +22,12 @@ public static class DbSeeder
 		AppDbContext db,
 		IPasswordHasher<AdminUser> passwordHasher,
 		IOptions<AdminBootstrapOptions> bootstrap,
+		IHostEnvironment environment,
 		CancellationToken ct = default)
 	{
 		try
 		{
-			await db.Database.EnsureCreatedAsync(ct);
+			await EnsureAppSchemaAsync(db, ct);
 			_ = await db.Organizations.AnyAsync(ct);
 			_ = await db.Activities.Select(a => a.JoinCode).AnyAsync(ct);
 			_ = await db.Activities.Select(a => a.RouteMode).AnyAsync(ct);
@@ -35,6 +39,10 @@ public static class DbSeeder
 		catch
 		{
 			// Side project: sin migraciones. Schema desfasado → recrear limpio.
+			// Nunca EnsureDeleted contra Supabase / Azure: droparía la BBDD compartida.
+			if (!environment.IsDevelopment())
+				throw;
+
 			await db.Database.EnsureDeletedAsync(ct);
 			await db.Database.EnsureCreatedAsync(ct);
 		}
@@ -75,6 +83,35 @@ public static class DbSeeder
 		if (joined.IsError)
 			throw new InvalidOperationException(joined.FirstError.Description);
 		await db.SaveChangesAsync(ct);
+	}
+
+	private static async Task EnsureAppSchemaAsync(AppDbContext db, CancellationToken ct)
+	{
+		await db.Database.EnsureCreatedAsync(ct);
+
+		try
+		{
+			_ = await db.Organizations.AnyAsync(ct);
+			return;
+		}
+		catch (Exception ex) when (IsUndefinedTable(ex))
+		{
+			// Supabase ya tiene la BBDD `postgres` (auth/storage). EnsureCreated no crea
+			// nuestras tablas si el servidor ya tiene cualquier relación.
+			var creator = db.GetService<IRelationalDatabaseCreator>();
+			await creator.CreateTablesAsync(ct);
+		}
+	}
+
+	private static bool IsUndefinedTable(Exception ex)
+	{
+		for (var e = ex; e is not null; e = e.InnerException)
+		{
+			if (e is PostgresException pg && pg.SqlState == PostgresErrorCodes.UndefinedTable)
+				return true;
+		}
+
+		return false;
 	}
 
 	private static async Task EnsureSuperAdminAsync(

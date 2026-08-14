@@ -10,7 +10,8 @@ namespace GincanaHud.Api.Features.AdminAuth.Login;
 
 public sealed class AdminLoginHandler(
 	AppDbContext db,
-	IPasswordHasher<AdminUser> passwordHasher)
+	IPasswordHasher<AdminUser> passwordHasher,
+	AdminJwtTokenService jwtTokens)
 	: IRequestHandler<AdminLoginCommand, ErrorOr<AdminLoginResponse>>
 {
 	public async Task<ErrorOr<AdminLoginResponse>> Handle(
@@ -37,11 +38,14 @@ public sealed class AdminLoginHandler(
 				description: "Usuario o contraseña incorrectos.");
 		}
 
+		var (token, expiresAt) = jwtTokens.CreateToken(admin, admin.Organization?.Name);
 		return new AdminLoginResponse(
 			admin.Id,
 			admin.Username,
 			admin.Role.ToString(),
 			admin.OrganizationId,
-			admin.Organization?.Name);
+			admin.Organization?.Name,
+			token,
+			expiresAt);
 	}
 }

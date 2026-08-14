@@ -1,3 +1,4 @@
+using GincanaHud.Api;
 using GincanaHud.Api.Common.Http;
 using GincanaHud.Api.Common.Messaging;
 using GincanaHud.Api.Features.AdminAuth.Login;
@@ -15,9 +16,10 @@ public static class AdminAuthEndpoints
 		{
 			var result = await sender.Send(new AdminLoginCommand(body.Username, body.Password), ct);
 			return result.ToHttpResult();
-		});
+		}).AllowAnonymous();
 
-		var users = app.MapGroup("/api/admin-users");
+		var users = app.MapGroup("/api/admin-users")
+			.RequireAuthorization(JwtAuthExtensions.SuperAdminPolicy);
 
 		users.MapGet("/", async (ISender sender, CancellationToken ct) =>
 		{

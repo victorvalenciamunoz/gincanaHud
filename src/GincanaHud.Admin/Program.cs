@@ -32,6 +32,7 @@ builder.Services.AddAuthorization(options =>
 
 builder.Services.AddCascadingAuthenticationState();
 builder.Services.AddHttpContextAccessor();
+builder.Services.AddTransient<AdminApiAuthHandler>();
 
 builder.Services.AddRazorComponents()
 	.AddInteractiveServerComponents();
@@ -39,7 +40,7 @@ builder.Services.AddRazorComponents()
 builder.Services.AddHttpClient<AdminApiClient>(client =>
 {
 	client.BaseAddress = new Uri("https+http://api");
-});
+}).AddHttpMessageHandler<AdminApiAuthHandler>();
 
 builder.Services.AddHttpClient<GeocodeService>(client =>
 {
@@ -99,7 +100,8 @@ app.MapPost("/account/login", async (HttpContext http, AdminApiClient api) =>
 	{
 		new(ClaimTypes.NameIdentifier, session.Id.ToString()),
 		new(ClaimTypes.Name, session.Username),
-		new(ClaimTypes.Role, role)
+		new(ClaimTypes.Role, role),
+		new(AdminApiAuthHandler.AccessTokenClaimType, session.AccessToken)
 	};
 	if (role == AdminRoles.OrganizationAdmin && session.OrganizationId is Guid orgId)
 		claims.Add(new Claim(AdminClaimTypes.OrganizationId, orgId.ToString()));
@@ -111,9 +113,15 @@ app.MapPost("/account/login", async (HttpContext http, AdminApiClient api) =>
 		CookieAuthenticationDefaults.AuthenticationScheme,
 		ClaimTypes.Name,
 		ClaimTypes.Role);
+	var props = new AuthenticationProperties
+	{
+		IsPersistent = true,
+		ExpiresUtc = session.ExpiresAt
+	};
 	await http.SignInAsync(
 		CookieAuthenticationDefaults.AuthenticationScheme,
-		new ClaimsPrincipal(identity));
+		new ClaimsPrincipal(identity),
+		props);
 
 	var target = !string.IsNullOrWhiteSpace(returnUrl) && returnUrl.StartsWith('/')
 		? returnUrl

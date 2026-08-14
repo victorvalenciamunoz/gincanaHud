@@ -1,3 +1,4 @@
+using GincanaHud.Api;
 using GincanaHud.Api.Common.Http;
 using GincanaHud.Api.Common.Messaging;
 using GincanaHud.Api.Features.Organizations.CreateOrganization;
@@ -10,7 +11,8 @@ public static class OrganizationsEndpoints
 {
 	public static RouteGroupBuilder MapOrganizationsEndpoints(this IEndpointRouteBuilder app)
 	{
-		var group = app.MapGroup("/api/organizations");
+		var group = app.MapGroup("/api/organizations")
+			.RequireAuthorization(JwtAuthExtensions.SuperAdminPolicy);
 
 		group.MapGet("/", async (ISender sender, CancellationToken ct) =>
 		{

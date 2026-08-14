@@ -1,3 +1,4 @@
+using GincanaHud.Api;
 using GincanaHud.Api.Common.Http;
 using GincanaHud.Api.Common.Messaging;
 using GincanaHud.Api.Features.Pois.CreatePoi;
@@ -10,7 +11,8 @@ public static class PoisEndpoints
 {
 	public static RouteGroupBuilder MapPoisEndpoints(this IEndpointRouteBuilder app)
 	{
-		var group = app.MapGroup("/api/pois");
+		var group = app.MapGroup("/api/pois")
+			.RequireAuthorization(JwtAuthExtensions.AdminPolicy);
 
 		group.MapGet("/", async (Guid? organizationId, ISender sender, CancellationToken ct) =>
 		{

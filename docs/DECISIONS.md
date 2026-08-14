@@ -139,18 +139,17 @@ Panel Admin con **cookie authentication**. Sustituido parcialmente por **D17** (
 
 **Elegido**
 
-- Despliegue con `aspire deploy` a **Azure Container Apps**.
-- Postgres como **contenedor** en ACA (el `AddPostgres` local), no Flexible Server.
-- **Sin `WithDataVolume` en publish**: Azure Files rompe `initdb` (`chmod` → Operation not permitted). Volumen solo en local; en Azure datos efímeros.
+- Despliegue con `aspire deploy` a **Azure Container Apps** (Api + Admin).
+- **Postgres en Supabase** (connection string `gincanahud` en publish). Local sigue con `AddPostgres` + volumen Docker.
 - Api/Admin con `MinReplicas = 0` (scale-to-zero).
-- Tras la demo: `az group delete -n rg-gincanahud-demo` → coste ~0.
+- Tras la demo: `az group delete -n rg-gincanahud-demo` → coste Azure ~0; **los datos quedan en Supabase**.
 
 **Rechazado (por ahora)**
 
 - GitHub Actions / CI de deploy.
 - Azure Database for PostgreSQL Flexible Server.
 - Key Vault en el primer deploy.
-- Persistencia de Postgres en ACA vía Azure Files.
+- Postgres como contenedor en ACA (Azure Files rompe `initdb` / `chmod`).
 
 Login `/account/login` (valida contra Api), logout `/account/logout`, `FallbackPolicy` autenticado.
 
@@ -195,15 +194,18 @@ Flujo jugador: escanear QR o teclear código → nombre (+ contacto) → jugar �
 
 **Auth**
 
-- Cuentas `AdminUser` en la **Api** (hash de contraseña). Cookie sigue en el host Admin (claims: rol + org).
+- Cuentas `AdminUser` en la **Api** (hash de contraseña). Cookie en el host Admin (claims: rol + org + `access_token`).
+- **JWT** emitido en `POST /api/admin-auth/login`; el Admin lo reenvía como `Authorization: Bearer` a la Api.
+- Rutas de gestión (orgs, admin-users, POIs CRUD Admin, escrituras de actividades, live, clear-players) requieren JWT. Rutas MAUI (join, capture, ranking, upsert user…) siguen anónimas.
 - **Bootstrap SuperAdmin**: user-secrets / parámetros Aspire se siembran en DB al arrancar si no hay SuperAdmin.
 - Los admins de empresa los crea el SuperAdmin (usuario + contraseña + organización); **no** van en appsettings.
+- Firma JWT: `Jwt:SigningKey` (mín. 32 chars). En Development hay fallback; en Azure parámetro `jwt-signing-key`.
 
 **Rechazado (por ahora)**
 
 - OAuth / Entra ID.
 - Permisos finos por pantalla más allá de rol + org.
-- Auth JWT en cada endpoint de la Api (Admin confía en red Aspire; scoping en UI + filtros).
+- JWT / auth para el jugador móvil.
 
 ## D18 — Modo de ruta: secuencial vs libre
 

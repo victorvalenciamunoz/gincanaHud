@@ -17,6 +17,7 @@ builder.AddNpgsqlDbContext<AppDbContext>("gincanahud");
 builder.Services.Configure<AdminBootstrapOptions>(
 	builder.Configuration.GetSection(AdminBootstrapOptions.SectionName));
 builder.Services.AddSingleton<IPasswordHasher<AdminUser>, PasswordHasher<AdminUser>>();
+builder.Services.AddGincanaJwtAuth(builder.Configuration, builder.Environment);
 builder.Services.AddOpenApi();
 builder.Services.AddApiMediator();
 builder.Services.ConfigureHttpJsonOptions(o =>
@@ -29,12 +30,15 @@ app.MapDefaultEndpoints();
 if (app.Environment.IsDevelopment())
 	app.MapOpenApi();
 
+app.UseAuthentication();
+app.UseAuthorization();
+
 using (var scope = app.Services.CreateScope())
 {
 	var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 	var hasher = scope.ServiceProvider.GetRequiredService<IPasswordHasher<AdminUser>>();
 	var bootstrap = scope.ServiceProvider.GetRequiredService<Microsoft.Extensions.Options.IOptions<AdminBootstrapOptions>>();
-	await DbSeeder.SeedAsync(db, hasher, bootstrap);
+	await DbSeeder.SeedAsync(db, hasher, bootstrap, app.Environment);
 }
 
 app.MapUsersEndpoints();
