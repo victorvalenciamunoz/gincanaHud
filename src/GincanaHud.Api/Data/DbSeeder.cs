@@ -50,7 +50,12 @@ public static class DbSeeder
 		await EnsureSuperAdminAsync(db, passwordHasher, bootstrap.Value, ct);
 
 		if (await db.Activities.AnyAsync(ct))
+		{
+			// Dev: DEMO01 se crea con +7 días; si el volumen Docker persiste, caduca y el join da 400.
+			if (environment.IsDevelopment())
+				await RefreshDemoActivityWindowIfNeededAsync(db, ct);
 			return;
+		}
 
 		var org = Organization.Create("Demo Organizador", DemoOrgId);
 		if (org.IsError)
@@ -156,5 +161,28 @@ public static class DbSeeder
 
 		if (changed)
 			await db.SaveChangesAsync(ct);
+	}
+
+	private static async Task RefreshDemoActivityWindowIfNeededAsync(AppDbContext db, CancellationToken ct)
+	{
+		var demo = await db.Activities.FirstOrDefaultAsync(a => a.Id == DemoActivityId, ct);
+		if (demo is null)
+			return;
+
+		var now = DateTimeOffset.UtcNow;
+		if (demo.IsOpenForJoin(now))
+			return;
+
+		var updated = demo.Update(
+			demo.Title,
+			demo.Description,
+			isActive: true,
+			startsAt: now.AddHours(-1),
+			endsAt: now.AddDays(7),
+			demo.RouteMode);
+		if (updated.IsError)
+			throw new InvalidOperationException(updated.FirstError.Description);
+
+		await db.SaveChangesAsync(ct);
 	}
 }

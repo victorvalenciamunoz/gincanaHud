@@ -19,6 +19,7 @@ builder.Services.Configure<AdminBootstrapOptions>(
 builder.Services.AddSingleton<IPasswordHasher<AdminUser>, PasswordHasher<AdminUser>>();
 builder.Services.AddGincanaJwtAuth(builder.Configuration, builder.Environment);
 builder.Services.AddOpenApi();
+builder.Services.AddProblemDetails();
 builder.Services.AddApiMediator();
 builder.Services.ConfigureHttpJsonOptions(o =>
 	o.SerializerOptions.Converters.Add(new JsonStringEnumConverter()));

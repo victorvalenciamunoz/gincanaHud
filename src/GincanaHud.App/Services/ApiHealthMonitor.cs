@@ -70,8 +70,18 @@ public sealed class ApiHealthMonitor : IApiHealthMonitor, IDisposable
 
 	public async Task ProbeAsync(CancellationToken ct = default)
 	{
-		if (Interlocked.Exchange(ref _probing, 1) == 1)
+		if (Interlocked.CompareExchange(ref _probing, 1, 0) != 0)
+		{
+			var waitStart = DateTime.UtcNow;
+			while (Volatile.Read(ref _probing) != 0)
+			{
+				if (DateTime.UtcNow - waitStart > TimeSpan.FromSeconds(5))
+					return;
+				await Task.Delay(40, ct).ConfigureAwait(false);
+			}
+
 			return;
+		}
 
 		try
 		{

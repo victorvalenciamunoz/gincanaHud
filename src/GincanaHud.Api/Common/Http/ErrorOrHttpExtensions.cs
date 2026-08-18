@@ -9,15 +9,51 @@ public static class ErrorOrHttpExtensions
 		if (!result.IsError)
 			return onValue?.Invoke(result.Value) ?? Results.Ok(result.Value);
 
-		var error = result.FirstError;
-		return error.Type switch
+		return new DomainErrorResult(result.FirstError);
+	}
+
+	private static int StatusCodeFor(ErrorType type) => type switch
+	{
+		ErrorType.Validation => StatusCodes.Status400BadRequest,
+		ErrorType.NotFound => StatusCodes.Status404NotFound,
+		ErrorType.Conflict => StatusCodes.Status409Conflict,
+		ErrorType.Unauthorized => StatusCodes.Status401Unauthorized,
+		ErrorType.Forbidden => StatusCodes.Status403Forbidden,
+		_ => StatusCodes.Status500InternalServerError
+	};
+
+	private sealed class DomainErrorResult(Error error) : IResult
+	{
+		public Task ExecuteAsync(HttpContext http)
 		{
-			ErrorType.Validation => Results.BadRequest(error.Description),
-			ErrorType.NotFound => Results.NotFound(error.Description),
-			ErrorType.Conflict => Results.Conflict(error.Description),
-			ErrorType.Unauthorized => Results.Unauthorized(),
-			ErrorType.Forbidden => Results.Json(new { error = error.Description }, statusCode: StatusCodes.Status403Forbidden),
-			_ => Results.Problem(detail: error.Description, statusCode: StatusCodes.Status500InternalServerError)
-		};
+			var status = StatusCodeFor(error.Type);
+			var logger = http.RequestServices
+				.GetService<ILoggerFactory>()
+				?.CreateLogger("GincanaHud.Api.Errors");
+
+			logger?.LogWarning(
+				"{Method} {Path} → {Status} [{Code}] {Detail}",
+				http.Request.Method,
+				http.Request.Path.Value,
+				status,
+				error.Code,
+				error.Description);
+
+			if (error.Type is ErrorType.Unauthorized)
+			{
+				http.Response.StatusCode = status;
+				return Task.CompletedTask;
+			}
+
+			return Results.Problem(
+				detail: error.Description,
+				statusCode: status,
+				title: error.Code,
+				instance: http.Request.Path.Value,
+				extensions: new Dictionary<string, object?>
+				{
+					["code"] = error.Code
+				}).ExecuteAsync(http);
+		}
 	}
 }

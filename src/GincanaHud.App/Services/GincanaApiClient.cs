@@ -1,6 +1,7 @@
 using System.Net.Http.Json;
 using System.Text.Json;
 using GincanaHud.Shared;
+using Microsoft.Extensions.Logging;
 
 namespace GincanaHud.App.Services;
 
@@ -16,7 +17,7 @@ public interface IGincanaApiClient
 	Task<IReadOnlyList<RankingEntryDto>> GetRankingAsync(Guid activityId, CancellationToken ct = default);
 }
 
-public sealed class GincanaApiClient(HttpClient http) : IGincanaApiClient
+public sealed class GincanaApiClient(HttpClient http, ILogger<GincanaApiClient> logger) : IGincanaApiClient
 {
 	private static readonly JsonSerializerOptions JsonOptions = new()
 	{
@@ -44,12 +45,7 @@ public sealed class GincanaApiClient(HttpClient http) : IGincanaApiClient
 	{
 		using var response = await http.PostAsJsonAsync("api/activities/join", request, ct);
 		if (!response.IsSuccessStatusCode)
-		{
-			var body = await response.Content.ReadAsStringAsync(ct);
-			throw new HttpRequestException(string.IsNullOrWhiteSpace(body)
-				? $"Join falló ({(int)response.StatusCode})"
-				: body.Trim('"'));
-		}
+			throw await CreateApiExceptionAsync("Unirse", response, ct);
 
 		return (await response.Content.ReadFromJsonAsync<JoinActivityResponse>(JsonOptions, ct))!;
 	}
@@ -88,16 +84,59 @@ public sealed class GincanaApiClient(HttpClient http) : IGincanaApiClient
 	{
 		using var response = await http.PostAsJsonAsync($"api/activities/{activityId}/capture", request, ct);
 		if (!response.IsSuccessStatusCode)
-		{
-			var body = await response.Content.ReadAsStringAsync(ct);
-			var msg = string.IsNullOrWhiteSpace(body)
-				? $"Capture falló ({(int)response.StatusCode})"
-				: body.Trim().Trim('"');
-			throw new HttpRequestException(msg);
-		}
+			throw await CreateApiExceptionAsync("Captura", response, ct);
 
 		return (await response.Content.ReadFromJsonAsync<CaptureResponse>(JsonOptions, ct))
 			?? new CaptureResponse(false, 0, null, 0, null, "Respuesta vacía.");
+	}
+
+	private async Task<HttpRequestException> CreateApiExceptionAsync(
+		string action, HttpResponseMessage response, CancellationToken ct)
+	{
+		var status = (int)response.StatusCode;
+		var body = await response.Content.ReadAsStringAsync(ct);
+		var problem = TryReadProblemDetails(body);
+		var detail = problem?.Detail
+			?? problem?.Title
+			?? (string.IsNullOrWhiteSpace(body) ? null : body.Trim().Trim('"'));
+
+		var message = string.IsNullOrWhiteSpace(detail)
+			? $"{action} falló (HTTP {status})."
+			: detail;
+
+		logger.LogWarning(
+			"{Action} → HTTP {Status} [{Code}]: {Detail}",
+			action,
+			status,
+			problem?.Code ?? problem?.Title ?? "?",
+			message);
+
+		return new HttpRequestException(message, null, response.StatusCode);
+	}
+
+	private static ProblemDetailsPayload? TryReadProblemDetails(string body)
+	{
+		if (string.IsNullOrWhiteSpace(body) || body[0] is not '{')
+			return null;
+		try
+		{
+			return JsonSerializer.Deserialize<ProblemDetailsPayload>(body, JsonOptions);
+		}
+		catch (JsonException)
+		{
+			return null;
+		}
+	}
+
+	/// <summary>Subset de RFC 7807 (+ extensión <c>code</c> de nuestra Api).</summary>
+	private sealed class ProblemDetailsPayload
+	{
+		public string? Type { get; set; }
+		public string? Title { get; set; }
+		public int? Status { get; set; }
+		public string? Detail { get; set; }
+		public string? Instance { get; set; }
+		public string? Code { get; set; }
 	}
 
 	public async Task<IReadOnlyList<RankingEntryDto>> GetRankingAsync(Guid activityId, CancellationToken ct = default)

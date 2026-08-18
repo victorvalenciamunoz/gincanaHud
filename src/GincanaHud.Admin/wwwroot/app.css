@@ -30,7 +30,7 @@ h1:focus {
 
 html, body {
     margin: 0;
-    font-family: "Segoe UI", system-ui, sans-serif;
+    font-family: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
     background: #0f1419;
     color: #e7ecf1;
 }
@@ -47,9 +47,10 @@ html, body {
     flex-direction: column;
     gap: 0.5rem;
 }
-.admin-nav .brand { font-weight: 700; margin-bottom: 1rem; color: #7CFFB2; }
+.admin-nav .brand { font-family: "Chakra Petch", sans-serif; font-weight: 700; margin-bottom: 1rem; color: #7CFFB2; letter-spacing: 0.04em; }
+.admin-nav .brand-sub { color: #5fa882; font-weight: 500; font-size: 0.8rem; letter-spacing: 0.12em; text-transform: uppercase; margin-left: 0.15rem; }
 .admin-nav a { color: #c5d0db; text-decoration: none; padding: 0.4rem 0.5rem; border-radius: 6px; }
-.admin-nav a.active { background: #243041; color: #fff; }
+.admin-nav a.active { background: #14261f; color: #7CFFB2; }
 .admin-main { flex: 1; padding: 1.5rem 2rem; min-width: 0; }
 
 @media (max-width: 800px) {
@@ -67,9 +68,11 @@ html, body {
     }
     .admin-topbar-brand {
         flex: 1;
+        font-family: "Chakra Petch", sans-serif;
         font-weight: 700;
         color: #7CFFB2;
         font-size: 0.95rem;
+        letter-spacing: 0.04em;
     }
     .admin-topbar-live {
         text-decoration: none;
@@ -153,8 +156,8 @@ html, body {
         grid-template-columns: repeat(2, minmax(0, 1fr));
         gap: 0.6rem;
     }
-    .stats div { min-width: 0; padding: 0.85rem 0.9rem; }
-    .stats strong { font-size: 1.35rem; }
+    .stat-card { min-width: 0; padding: 0.85rem 0.9rem; }
+    .stat-card strong { font-size: 1.35rem; }
     table { display: block; overflow-x: auto; -webkit-overflow-scrolling: touch; }
     .form-row select,
     .form-row input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]),
@@ -165,7 +168,12 @@ html, body {
     .join-panel { padding: 0.85rem; }
 }
 
-h1 { margin-top: 0; }
+h1 {
+    margin-top: 0;
+    font-family: "Chakra Petch", sans-serif;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+}
 table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
 th, td { text-align: left; padding: 0.55rem 0.6rem; border-bottom: 1px solid #2a3544; }
 th { color: #9aabbc; font-weight: 600; }
@@ -193,13 +201,37 @@ button {
     font: inherit;
 }
 button:disabled { opacity: 0.5; }
-.stats { display: flex; gap: 1rem; margin-top: 1.5rem; }
-.stats div {
-    background: #161d27; padding: 1rem 1.25rem; border-radius: 10px; min-width: 120px;
-    display: flex; flex-direction: column; gap: 0.25rem;
+.stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(9.5rem, 1fr));
+    gap: 0.85rem;
+    margin-top: 1.5rem;
+    max-width: 44rem;
 }
-.stats strong { font-size: 1.6rem; }
-.stats span { color: #9aabbc; font-size: 0.9rem; }
+.stat-card {
+    background: #161d27;
+    padding: 1rem 1.25rem;
+    border-radius: 10px;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    text-decoration: none;
+    color: inherit;
+    border: 1px solid #2a3544;
+}
+.stat-card:hover { border-color: #3d8f68; }
+.stat-card strong {
+    font-family: "Chakra Petch", sans-serif;
+    font-size: 1.6rem;
+    color: #e7ecf1;
+}
+.stat-card span { color: #9aabbc; font-size: 0.9rem; }
+.stat-card-live {
+    background: linear-gradient(135deg, #0a2a22 0%, #161d27 100%);
+    border-color: #1f6f4a;
+}
+.stat-card-live strong { color: #7CFFB2; font-size: 1.15rem; }
 .error { color: #ff8e8e; }
 a { color: #7CFFB2; }
 .check {
@@ -257,6 +289,39 @@ a { color: #7CFFB2; }
     margin: 0 0 1rem;
     color: #9aabbc;
     max-width: 40rem;
+}
+.page-kicker, .login-kicker {
+    margin: 0 0 0.35rem;
+    color: #7CFFB2;
+    font-family: "Chakra Petch", sans-serif;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+}
+.login-shell {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1.5rem;
+    background: linear-gradient(135deg, #0a2a22 0%, #0b1218 55%, #161d27 100%);
+}
+.login-card {
+    width: min(24rem, 100%);
+    padding: 2rem 1.75rem 1.75rem;
+    background: #0e1814;
+    border: 1px solid #1e3d32;
+    border-radius: 12px;
+    box-shadow: 0 18px 40px rgba(0, 0, 0, 0.35);
+}
+.login-card .form-stack { max-width: none; }
+.login-card .form-stack button {
+    align-self: stretch;
+    min-height: 2.75rem;
+    font-family: "Chakra Petch", sans-serif;
+    font-weight: 700;
+    font-size: 1.05rem;
 }
 .form-stack {
     margin-top: 0.5rem;

@@ -18,8 +18,9 @@ public class MainActivity : MauiAppCompatActivity
 {
 	protected override void OnCreate(Bundle? savedInstanceState)
 	{
-		// Evita restaurar fragmentos con IDs de layout corruptos/colisionados
-		// (síntoma: No view found for id …/jumpToEnd = navigationlayout_content).
+		// No restaurar fragmentos: tras un deploy incremental los R.id del APK
+		// y los que Android tenía en savedInstanceState no coinciden
+		// (el log enseña un nombre aleatorio: jumpToEnd, italic, labeled…).
 		base.OnCreate(null);
 	}
 }

@@ -23,6 +23,12 @@
 		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'">26.0</SupportedOSPlatformVersion>
 	</PropertyGroup>
 
+	<!-- Fast Deployment deja R.id desfasados en el teléfono (.NET 10/11).
+	     Síntoma: crash al arrancar "No view found for id …/jumpToEnd" (u otro nombre aleatorio). -->
+	<PropertyGroup Condition="'$(Configuration)' == 'Debug'">
+		<EmbedAssembliesIntoApk>true</EmbedAssembliesIntoApk>
+	</PropertyGroup>
+
 	<ItemGroup>
 		<MauiIcon Include="Resources\AppIcon\appicon.svg" ForegroundFile="Resources\AppIcon\appiconfg.svg" Color="#0B1218" />
 		<MauiSplashScreen Include="Resources\Splash\splash.svg" Color="#0B1218" BaseSize="256,256" />

@@ -3,8 +3,8 @@ using GincanaHud.App.Services;
 namespace GincanaHud.App;
 
 /// <summary>
-/// Raíz sin Shell. Un solo NavigationPage envuelve el TabbedPage
-/// (evita NavigationPage anidados que complican fragmentos en Android).
+/// Raíz sin Shell ni NavigationPage envolvente.
+/// Unirse / HUD son pestañas; los flujos extra van por modal.
 /// </summary>
 public sealed class AppRoot : TabbedPage
 {
@@ -23,8 +23,6 @@ public sealed class AppRoot : TabbedPage
 
 		joinPage.Title = "Unirse";
 		hudPage.Title = "HUD";
-
-		NavigationPage.SetHasNavigationBar(hudPage, false);
 
 		Children.Add(joinPage);
 		Children.Add(hudPage);

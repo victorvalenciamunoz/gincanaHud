@@ -52,7 +52,7 @@ Más allá del HUD técnico:
 - **Usuarios/jugadores** (varios concurrentes).
 - Al capturar un POI, persistir **fecha/hora**.
 - Con **ruta secuencial** (`Order`), el ranking de premios es **orden de llegada a la meta** (timestamp de captura del último POI), no suma de puntos. Los puntos quedan como feedback de captura / futuro modo libre.
-- **Cola offline de capturas**: si falla la red en LOCK, el móvil guarda lat/lon + `CapturedAt`, sigue la ruta, y reenvía al volver `API Online` (el servidor respeta ese timestamp).
+- **Cola offline de capturas**: si falla la red en LOCK, el móvil guarda lat/lon + `CapturedAt`, sigue la ruta, y reenvía al volver `API Online` (el servidor respeta ese timestamp). Tras Unirse se cachea el detalle de la actividad para poder arrancar el HUD al reabrir la app sin cobertura.
 
 El cliente móvil sigue siendo MAUI HUD; la gestión no va en la app de calle.
 

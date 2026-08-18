@@ -19,6 +19,7 @@ public sealed class HudViewModel : ObservableObject, IDisposable
 	private readonly ICaptureFxService _captureFx;
 	private readonly IApiHealthMonitor _link;
 	private readonly ICaptureQueue _captureQueue;
+	private readonly IActivityRouteCache _routeCache;
 	private IDispatcherTimer? _pulseTimer;
 
 	private double? _latitude;
@@ -56,10 +57,12 @@ public sealed class HudViewModel : ObservableObject, IDisposable
 	private bool _useApiCapture;
 	private bool _serverConfirmed;
 	private bool _arriveInFlight;
+	private bool _startInFlight;
 	private int _poiTotal;
 	private int _poiCaptured;
 	private List<ActivityPoiDto> _routePois = [];
 	private ActivityRouteMode _routeMode = ActivityRouteMode.Sequential;
+	private ActivityDetailDto? _routeDetail;
 
 	public HudViewModel(
 		ILocationService location,
@@ -69,7 +72,8 @@ public sealed class HudViewModel : ObservableObject, IDisposable
 		IJoinSessionStore session,
 		ICaptureFxService captureFx,
 		IApiHealthMonitor link,
-		ICaptureQueue captureQueue)
+		ICaptureQueue captureQueue,
+		IActivityRouteCache routeCache)
 	{
 		_location = location;
 		_compass = compass;
@@ -79,6 +83,7 @@ public sealed class HudViewModel : ObservableObject, IDisposable
 		_captureFx = captureFx;
 		_link = link;
 		_captureQueue = captureQueue;
+		_routeCache = routeCache;
 		Frame = new HudFrame();
 		Drawable = new HudDrawable { Frame = Frame };
 		ProgressRing = new ProgressRingDrawable();
@@ -293,6 +298,9 @@ public sealed class HudViewModel : ObservableObject, IDisposable
 
 	private async Task ToggleAsync()
 	{
+		if (_startInFlight)
+			return;
+
 		if (IsRunning)
 		{
 			await StopAsync();
@@ -305,47 +313,84 @@ public sealed class HudViewModel : ObservableObject, IDisposable
 	/// <summary>Arranque idempotente (Unirse → HUD, o cold start con sesión).</summary>
 	public Task EnsureStartedAsync()
 	{
-		if (IsRunning)
+		if (IsRunning || _startInFlight)
 			return Task.CompletedTask;
 		return StartAsync();
 	}
 
 	private async Task StartAsync()
 	{
+		if (_startInFlight)
+			return;
+		_startInFlight = true;
 		try
 		{
 			var join = _session.Current;
 			if (join is null)
 			{
-				Status = "Primero únete (pestaña Unirse).";
+				SetHudStatus("Primero únete (pestaña Unirse).");
 				return;
 			}
+
+			SetHudStatus("Iniciando…");
 
 			var camera = await Permissions.RequestAsync<Permissions.Camera>();
 			if (camera != PermissionStatus.Granted)
 			{
-				Status = "Permiso de cámara denegado.";
+				SetHudStatus("Permiso de cámara denegado.");
 				return;
 			}
 
-			// Tras vaciar BD / reiniciar Aspire el UserId local puede quedar huérfano.
-			Status = "Sincronizando sesión…";
-			join = await RefreshJoinSessionAsync(join);
-			if (join is null)
+			SetHudStatus("Comprobando conexión…");
+			await _link.ProbeAsync();
+
+			var cached = _routeCache.TryGet(join.ActivityId, join.UserId);
+			ActivityDetailDto? detail;
+			var fromCache = false;
+			var apiUp = _link.State == ApiLinkState.Online;
+
+			if (!apiUp)
 			{
-				Status = "No se pudo renovar la sesión. Vuelve a Unirse.";
-				return;
-			}
+				if (cached is null)
+				{
+					SetHudStatus("Sin red y no hay ruta guardada. Ábrela una vez con cobertura tras unirte.");
+					return;
+				}
 
-			Status = "Cargando actividad…";
-			var detail = await _api.GetActivityAsync(join.ActivityId, join.UserId);
-			if (detail is null)
+				detail = cached;
+				fromCache = true;
+			}
+			else
 			{
-				_session.ClearSession();
-				Status = "La sesión ya no es válida (¿se reinició el servidor?). Vuelve a Unirse — tus datos están guardados.";
-				return;
+				SetHudStatus("Cargando actividad…");
+				using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(12));
+				try
+				{
+					detail = await _api.GetActivityAsync(join.ActivityId, join.UserId, cts.Token);
+					if (detail is null)
+					{
+						_session.ClearSession();
+						_routeCache.Clear();
+						SetHudStatus("La sesión ya no es válida (¿se reinició el servidor?). Vuelve a Unirse — tus datos están guardados.");
+						return;
+					}
+
+					_routeCache.Save(join.UserId, detail);
+				}
+				catch
+				{
+					if (cached is null)
+					{
+						SetHudStatus("La API no respondió y no hay ruta guardada.");
+						return;
+					}
+
+					detail = cached;
+					fromCache = true;
+				}
 			}
 
+			_routeDetail = detail;
 			_routePois = MergeQueuedCaptures(
 				detail.Pois.OrderBy(p => p.Order).ToList(),
 				detail.Id,
@@ -353,6 +398,7 @@ public sealed class HudViewModel : ObservableObject, IDisposable
 			_routeMode = detail.RouteMode;
 			_activityId = detail.Id;
 			_userId = join.UserId;
+			PersistRouteCache();
 
 			var next = PickNextPoi();
 
@@ -360,7 +406,7 @@ public sealed class HudViewModel : ObservableObject, IDisposable
 			{
 				if (_routePois.Count == 0)
 				{
-					Status = "La actividad no tiene POIs aún.";
+					SetHudStatus("La actividad no tiene POIs aún.");
 					TargetLabel = detail.Title;
 					Clue = "";
 					_useApiCapture = false;
@@ -370,7 +416,6 @@ public sealed class HudViewModel : ObservableObject, IDisposable
 				}
 				else
 				{
-					// Ya estaba todo capturado: mostrar fin + ranking.
 					ApplyProgress(_routePois, current: null);
 					await CompleteRouteAsync(detail.Title);
 					return;
@@ -380,72 +425,48 @@ public sealed class HudViewModel : ObservableObject, IDisposable
 			{
 				ApplyTarget(join.UserId, detail.Id, next);
 				ApplyProgress(_routePois, next);
-				Status = _routeMode == ActivityRouteMode.Free
+				SetHudStatus(_routeMode == ActivityRouteMode.Free
 					? "Ruta libre — objetivo más cercano"
-					: "Objetivo listo";
-				PushFrame();
+					: "Objetivo listo");
 			}
 
-			Status = "Iniciando sensores…";
+			SetHudStatus("Iniciando sensores…");
 			await _location.StartAsync();
 			_compass.Start();
 			_orientation.Start();
 			EnsurePulseTimer().Start();
 			IsRunning = true;
 			if (_targetLat is not null)
-				Status = "HUD activo";
+				SetHudStatus(fromCache ? "HUD activo (ruta local)" : "HUD activo");
 			CameraStartRequested?.Invoke(this, EventArgs.Empty);
 			Recalculate();
 		}
 		catch (Exception ex)
 		{
 			IsRunning = false;
-			Status = ex.Message;
+			SetHudStatus(ex.Message);
+		}
+		finally
+		{
+			_startInFlight = false;
 		}
 	}
 
-	/// <summary>Rehace join por nombre/código para obtener UserId e inscripción vigentes.</summary>
-	private async Task<JoinSession?> RefreshJoinSessionAsync(JoinSession join)
+	private void SetHudStatus(string message)
 	{
-		var profile = _session.LastProfile;
-		var code = FirstNonEmpty(join.JoinCode, profile.JoinCode);
-		var name = FirstNonEmpty(join.DisplayName, profile.DisplayName);
-		if (code is null || name is null)
-			return join;
-
-		try
-		{
-			var result = await _api.JoinAsync(new JoinActivityRequest(
-				code,
-				name,
-				string.IsNullOrWhiteSpace(profile.ContactEmail) ? null : profile.ContactEmail,
-				string.IsNullOrWhiteSpace(profile.ContactPhone) ? null : profile.ContactPhone));
-
-			var refreshed = new JoinSession(
-				result.User.Id,
-				result.Activity.Id,
-				result.Activity.Title,
-				name,
-				code);
-			_session.Save(refreshed, profile with { DisplayName = name, JoinCode = code });
-			return refreshed;
-		}
-		catch
-		{
-			// Si falla (p. ej. sin red), seguimos con la sesión local; Capture mostrará el error.
-			return join;
-		}
+		Status = message;
+		PushFrame();
 	}
 
-	private static string? FirstNonEmpty(params string[] values)
+	private void PersistRouteCache()
 	{
-		foreach (var v in values)
-		{
-			if (!string.IsNullOrWhiteSpace(v))
-				return v.Trim();
-		}
+		if (_routeDetail is null || _userId is null || _activityId is null)
+			return;
+		if (_routeDetail.Id != _activityId.Value)
+			return;
 
-		return null;
+		_routeDetail = _routeDetail with { Pois = _routePois };
+		_routeCache.Save(_userId.Value, _routeDetail);
 	}
 
 	private void ApplyTarget(Guid userId, Guid activityId, ActivityPoiDto poi)
@@ -895,6 +916,7 @@ public sealed class HudViewModel : ObservableObject, IDisposable
 		_captureFlash = 1;
 		_captureFx.PlayCaptureSuccess();
 		_routePois = MarkPoiCaptured(_routePois, poiId, capturedAt);
+		PersistRouteCache();
 
 		Status = pendingSync
 			? "Capturado sin red — se sincronizará"
@@ -949,6 +971,8 @@ public sealed class HudViewModel : ObservableObject, IDisposable
 					detail.Pois.OrderBy(p => p.Order).ToList(),
 					detail.Id,
 					_userId.Value);
+				_routeDetail = detail with { Pois = _routePois };
+				PersistRouteCache();
 			}
 
 			await AdvanceFromLocalRouteAsync();

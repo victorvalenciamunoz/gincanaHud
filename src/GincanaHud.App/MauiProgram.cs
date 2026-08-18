@@ -26,10 +26,8 @@ public static class MauiProgram
 			});
 
 		var apiOptions = new ApiOptions
-		{
-			// Apunta a tu Api: Dev Tunnel, IP de LAN o URL publicada.
-			// Emulador Android → host: http://10.0.2.2:<puerto>/
-			BaseUrl = "https://localhost:7202/",
+		{			
+			BaseUrl = "https://xd34zm76-7202.uks1.devtunnels.ms/",
 			PlayerName = "jugador"
 		};
 		builder.Services.AddSingleton(apiOptions);
@@ -61,6 +59,7 @@ public static class MauiProgram
 		builder.Services.AddSingleton<ICompassService, MauiCompassService>();
 		builder.Services.AddSingleton<IOrientationService, MauiOrientationService>();
 		builder.Services.AddSingleton<ICaptureFxService, CaptureFxService>();
+		builder.Services.AddSingleton<IActivityRouteCache, PreferencesActivityRouteCache>();
 		builder.Services.AddSingleton<ICaptureQueue, PreferencesCaptureQueue>();
 		builder.Services.AddSingleton<ICaptureSyncService, CaptureSyncService>();
 		builder.Services.AddSingleton<JoinViewModel>();

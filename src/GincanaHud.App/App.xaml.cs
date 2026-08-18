@@ -13,11 +13,8 @@ public partial class App : Application
 
 	protected override Window CreateWindow(IActivationState? activationState)
 	{
-		var nav = new NavigationPage(_root)
-		{
-			BarBackgroundColor = Color.FromArgb("#0B1218"),
-			BarTextColor = Color.FromArgb("#E8EEF4")
-		};
-		return new Window(nav);
+		// TabbedPage como raíz. Un NavigationPage extra crea fragmentos Android
+		// (id jumpToEnd / navigationlayout_content) que fallan tras deploys incrementales.
+		return new Window(_root);
 	}
 }

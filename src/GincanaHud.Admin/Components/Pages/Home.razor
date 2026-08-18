@@ -5,8 +5,9 @@
 
 <PageTitle>Admin</PageTitle>
 
-<h1>GincanaHud Admin</h1>
-<p>Panel de gestión sobre la API Aspire.</p>
+<p class="page-kicker">Panel</p>
+<h1>Hoy</h1>
+<p class="page-lead">Eventos, puntos y jugadores de tu organización.</p>
 
 @if (!string.IsNullOrEmpty(_error))
 {
@@ -14,42 +15,62 @@
 }
 else if (_loading)
 {
-    <p>Cargando…</p>
+    <p class="page-lead">Cargando…</p>
 }
 else
 {
     <div class="stats">
-        <div><strong>@_players</strong><span>jugadores</span></div>
-        <div><strong>@_activities</strong><span>actividades</span></div>
-        <div><strong>@_pois</strong><span>POIs</span></div>
+        <a class="stat-card" href="/users">
+            <strong>@_players</strong>
+            <span>jugadores</span>
+        </a>
+        <a class="stat-card" href="/activities">
+            <strong>@_activities</strong>
+            <span>actividades</span>
+        </a>
+        <a class="stat-card" href="/pois">
+            <strong>@_pois</strong>
+            <span>POIs</span>
+        </a>
+        <a class="stat-card stat-card-live" href="/live">
+            <strong>En vivo</strong>
+            <span>ranking y progreso</span>
+        </a>
     </div>
 }
 
 @code {
+    int _players;
+    int _activities;
+    int _pois;
     bool _loading = true;
     string? _error;
-    int _players, _activities, _pois;
 
     protected override async Task OnInitializedAsync()
     {
         try
         {
-            Guid? orgId = null;
             var user = Http.HttpContext?.User;
-            if (!AdminPrincipal.IsSuperAdmin(user))
+            var isSuper = AdminPrincipal.IsSuperAdmin(user);
+            Guid? orgId = null;
+            if (!isSuper)
             {
                 var orgClaim = user?.FindFirst(AdminClaimTypes.OrganizationId)?.Value;
                 if (Guid.TryParse(orgClaim, out var oid))
                     orgId = oid;
             }
 
-            var activities = await Api.GetActivitiesAsync() ?? [];
-            if (orgId is Guid filterOrg)
-                activities = activities.Where(a => a.OrganizationId == filterOrg).ToList();
+            var usersTask = Api.GetUsersAsync(orgId);
+            var activitiesTask = Api.GetActivitiesAsync(includeInactive: true);
+            var poisTask = Api.GetPoisAsync(orgId);
+            await Task.WhenAll(usersTask, activitiesTask, poisTask);
 
-            _players = (await Api.GetUsersAsync(orgId))?.Count ?? 0;
+            _players = (await usersTask)?.Count ?? 0;
+            var activities = await activitiesTask ?? [];
+            if (orgId is Guid filter)
+                activities = activities.Where(a => a.OrganizationId == filter).ToList();
             _activities = activities.Count;
-            _pois = (await Api.GetPoisAsync(orgId))?.Count ?? 0;
+            _pois = (await poisTask)?.Count ?? 0;
         }
         catch (Exception ex)
         {

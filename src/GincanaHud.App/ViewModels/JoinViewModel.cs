@@ -9,6 +9,7 @@ public sealed class JoinViewModel : ObservableObject
 {
 	private readonly IGincanaApiClient _api;
 	private readonly IJoinSessionStore _session;
+	private readonly IActivityRouteCache _routeCache;
 	private readonly IAppNavigator _nav;
 	private readonly IPlayerSettings _settings;
 	private readonly IGameplayLauncher _launcher;
@@ -18,6 +19,7 @@ public sealed class JoinViewModel : ObservableObject
 	private string _contactEmail = "";
 	private string _contactPhone = "";
 	private string _status = "Introduce el código o escanea el QR del cartel.";
+	private bool _statusIsError;
 	private string _sessionSummary = "";
 	private bool _busy;
 	private bool _hasSession;
@@ -26,12 +28,14 @@ public sealed class JoinViewModel : ObservableObject
 	public JoinViewModel(
 		IGincanaApiClient api,
 		IJoinSessionStore session,
+		IActivityRouteCache routeCache,
 		IAppNavigator nav,
 		IPlayerSettings settings,
 		IGameplayLauncher launcher)
 	{
 		_api = api;
 		_session = session;
+		_routeCache = routeCache;
 		_nav = nav;
 		_settings = settings;
 		_launcher = launcher;
@@ -71,6 +75,18 @@ public sealed class JoinViewModel : ObservableObject
 		get => _status;
 		private set => SetProperty(ref _status, value);
 	}
+
+	public bool StatusIsError
+	{
+		get => _statusIsError;
+		private set => SetProperty(ref _statusIsError, value);
+	}
+
+	public Color StatusColor => StatusIsError
+		? Color.FromArgb("#FF8A80")
+		: Color.FromArgb("#C5D0DB");
+
+	public bool StatusIsHint => !StatusIsError;
 
 	public string SessionSummary
 	{
@@ -135,10 +151,18 @@ public sealed class JoinViewModel : ObservableObject
 	{
 		JoinCode = code.Trim().ToUpperInvariant();
 		PersistProfileDraft();
-		Status = $"Código leído: {JoinCode}";
+		SetStatus($"Código leído: {JoinCode}");
 	}
 
-	public void NotifyStatus(string message) => Status = message;
+	public void NotifyStatus(string message) => SetStatus(message);
+
+	private void SetStatus(string message, bool isError = false)
+	{
+		StatusIsError = isError;
+		Status = message;
+		OnPropertyChanged(nameof(StatusColor));
+		OnPropertyChanged(nameof(StatusIsHint));
+	}
 
 	private void LoadFormFromProfile()
 	{
@@ -168,18 +192,18 @@ public sealed class JoinViewModel : ObservableObject
 		var name = DisplayName.Trim();
 		if (code.Length < 4)
 		{
-			Status = "Código demasiado corto.";
+			SetStatus("Código demasiado corto (mín. 4 caracteres).", isError: true);
 			return;
 		}
 
 		if (name.Length < 2)
 		{
-			Status = "Pon tu nombre (mín. 2 caracteres).";
+			SetStatus("Pon tu nombre (mín. 2 caracteres).", isError: true);
 			return;
 		}
 
 		Busy = true;
-		Status = "Uniéndote…";
+		SetStatus("Uniéndote…");
 		PersistProfileDraft();
 		try
 		{
@@ -202,17 +226,19 @@ public sealed class JoinViewModel : ObservableObject
 					ContactEmail.Trim(),
 					ContactPhone.Trim()));
 
+			await CacheRouteAsync(result.Activity.Id, result.User.Id);
+
 			RefreshSession();
 			var modeNote = result.Activity.RouteMode == ActivityRouteMode.Free
 				? "Ruta libre"
 				: "Ruta secuencial";
-			Status = $"Listo: {result.Activity.Title} ({modeNote}). Arrancando…";
+			SetStatus($"Listo: {result.Activity.Title} ({modeNote}). Arrancando…");
 			_launcher.RequestAutoStart();
 			_nav.GoToHud();
 		}
 		catch (Exception ex)
 		{
-			Status = ex.Message;
+			SetStatus(ex.Message, isError: true);
 		}
 		finally
 		{
@@ -220,12 +246,27 @@ public sealed class JoinViewModel : ObservableObject
 		}
 	}
 
+	private async Task CacheRouteAsync(Guid activityId, Guid userId)
+	{
+		try
+		{
+			var detail = await _api.GetActivityAsync(activityId, userId);
+			if (detail is not null)
+				_routeCache.Save(userId, detail);
+		}
+		catch
+		{
+			// Unirse ya valió; el HUD reintentará o usará caché previa.
+		}
+	}
+
 	private void ClearSession()
 	{
 		PersistProfileDraft();
 		_session.ClearSession();
+		_routeCache.Clear();
 		RefreshSession();
-		Status = "Saliste de la actividad. Tus datos se conservan para volver a unirte.";
+		SetStatus("Saliste de la actividad. Tus datos se conservan para volver a unirte.");
 		_nav.GoToJoin();
 	}
 }

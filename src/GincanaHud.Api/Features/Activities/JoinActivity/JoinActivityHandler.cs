@@ -33,7 +33,7 @@ public sealed class JoinActivityHandler(AppDbContext db)
 		{
 			return Error.Validation(
 				code: "Activity.Closed",
-				description: "Esta actividad ya no admite uniones (caducada o inactiva).");
+				description: "Esta actividad está caducada o inactiva).");
 		}
 
 		var nameResult = DisplayName.Create(body.DisplayName);
