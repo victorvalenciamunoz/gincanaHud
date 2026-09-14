@@ -1,7 +1,6 @@
 # Mantiene vivo el free tier de Supabase (pausa ~7 días sin actividad).
 #
-# Secret: SUPABASE_DB_URL
-# Preferido:
+# Secret: SUPABASE_DB_URL (Npgsql preferido)
 #   Host=aws-1-eu-west-3.pooler.supabase.com;Port=5432;Database=postgres;Username=postgres.gzcrrlazcodfhhjjntmn;Password=...;SSL Mode=Require;Trust Server Certificate=true
 
 name: Supabase keepalive
@@ -22,16 +21,7 @@ jobs:
       - name: Install psql
         run: sudo apt-get update && sudo apt-get install -y postgresql-client
 
-      - name: Build connection info
+      - name: Ping database
         env:
           SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
         run: python3 .github/scripts/supabase_conninfo.py
-
-      - name: Ping database
-        run: |
-          echo "Conectando como PGUSER=$PGUSER a PGHOST=$PGHOST:$PGPORT"
-          if [ "$PGUSER" = "postgres" ]; then
-            echo "PGUSER sigue siendo solo 'postgres' — revisa Username= en el secret."
-            exit 1
-          fi
-          psql -v ON_ERROR_STOP=1 -c "select 1 as keep_alive, now() as at;"

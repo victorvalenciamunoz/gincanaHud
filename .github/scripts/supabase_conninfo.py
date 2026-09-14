@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
-"""Lee SUPABASE_DB_URL (URI o Npgsql) y escribe PG* en GITHUB_ENV para psql."""
+"""Lee SUPABASE_DB_URL y ejecuta un ping con psql en el mismo proceso."""
 from __future__ import annotations
 
 import os
 import re
+import subprocess
 import sys
 import urllib.parse
 
@@ -25,7 +26,6 @@ def fail(msg: str) -> None:
 
 
 def parse_npgsql(raw: str) -> tuple[str, str, str, str, str]:
-    """Parsea Npgsql sin partir la password si contiene ';'."""
     parts: dict[str, str] = {}
     pattern = re.compile(
         r"(?i)(?:^|;)\s*("
@@ -66,12 +66,13 @@ def parse_secret(raw: str) -> tuple[str, str, str, str, str]:
 
     if raw.startswith("postgres://") or raw.startswith("postgresql://"):
         u = urllib.parse.urlparse(raw)
-        host = u.hostname or ""
-        port = str(u.port or 5432)
-        database = (u.path or "/postgres").lstrip("/") or "postgres"
-        username = urllib.parse.unquote(u.username or "")
-        password = urllib.parse.unquote(u.password or "")
-        return host, port, database, username, password
+        return (
+            u.hostname or "",
+            str(u.port or 5432),
+            (u.path or "/postgres").lstrip("/") or "postgres",
+            urllib.parse.unquote(u.username or ""),
+            urllib.parse.unquote(u.password or ""),
+        )
 
     if ";" in raw and "=" in raw:
         return parse_npgsql(raw)
@@ -85,8 +86,14 @@ def parse_secret(raw: str) -> tuple[str, str, str, str, str]:
 def main() -> None:
     host, port, database, username, password = parse_secret(os.environ.get("SUPABASE_DB_URL", ""))
 
-    if not password or password in ("[YOUR-PASSWORD]", "YOUR-PASSWORD", "TU_PASSWORD", "TU_PASSWORD_AQUI", "AQUI_LA_PASSWORD"):
-        fail("La password del secret parece un placeholder. Pon la password real de la base de datos.")
+    if not password or password in (
+        "[YOUR-PASSWORD]",
+        "YOUR-PASSWORD",
+        "TU_PASSWORD",
+        "TU_PASSWORD_AQUI",
+        "AQUI_LA_PASSWORD",
+    ):
+        fail("La password del secret parece un placeholder.")
 
     if "pooler.supabase.com" in host and (username == "postgres" or "." not in username):
         fail(
@@ -94,26 +101,30 @@ def main() -> None:
             "Debe ser postgres.<project-ref>, p.ej. postgres.gzcrrlazcodfhhjjntmn"
         )
 
+    print(f"::add-mask::{password}")
     print(
-        f"Parsed host={host} port={port} db={database} user={username} password_len={len(password)}",
+        f"Ping host={host} port={port} db={database} user={username} password_len={len(password)}",
         file=sys.stderr,
     )
 
-    github_env = os.environ.get("GITHUB_ENV")
-    if not github_env:
-        fail("GITHUB_ENV no está definido (¿fuera de Actions?).")
+    env = os.environ.copy()
+    env.update(
+        {
+            "PGHOST": host,
+            "PGPORT": port,
+            "PGDATABASE": database,
+            "PGUSER": username,
+            "PGPASSWORD": password,
+            "PGSSLMODE": "require",
+        }
+    )
 
-    print(f"::add-mask::{password}")
-
-    with open(github_env, "a", encoding="utf-8") as fh:
-        fh.write(f"PGHOST={host}\n")
-        fh.write(f"PGPORT={port}\n")
-        fh.write(f"PGDATABASE={database}\n")
-        fh.write(f"PGUSER={username}\n")
-        fh.write("PGPASSWORD<<EOF\n")
-        fh.write(f"{password}\n")
-        fh.write("EOF\n")
-        fh.write("PGSSLMODE=require\n")
+    result = subprocess.run(
+        ["psql", "-v", "ON_ERROR_STOP=1", "-c", "select 1 as keep_alive, now() as at;"],
+        env=env,
+        check=False,
+    )
+    raise SystemExit(result.returncode)
 
 
 if __name__ == "__main__":
