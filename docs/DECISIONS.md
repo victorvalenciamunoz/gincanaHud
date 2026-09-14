@@ -146,7 +146,7 @@ Panel Admin con **cookie authentication**. Sustituido parcialmente por **D17** (
 
 **Rechazado (por ahora)**
 
-- GitHub Actions / CI de deploy.
+- GitHub Actions / CI de deploy (sí hay un workflow de keepalive SQL a Supabase; no CI de build/deploy).
 - Azure Database for PostgreSQL Flexible Server.
 - Key Vault en el primer deploy.
 - Postgres como contenedor en ACA (Azure Files rompe `initdb` / `chmod`).

@@ -1,9 +1,13 @@
 # Status
 
 **Phase:** 6+ / D16 evento + **D17 roles Admin**  
-**Updated:** 2026-08-17
+**Updated:** 2026-09-14
 
 ## Done (reciente)
+
+### Supabase keepalive (GitHub Action)
+- Workflow `.github/workflows/supabase-keepalive.yml` (cron cada 5 días + manual)
+- Secret del repo: `SUPABASE_DB_URL` (URI del session pooler, puerto 5432)
 
 ### HUD offline — ruta cacheada
 - Tras Unirse se guarda el detalle de la actividad en el teléfono
@@ -49,8 +53,9 @@
 
 ## Next
 
-1. Redeploy ACA cuando haga falta (`jwt-signing-key` + Supabase)
-2. Key Vault Azure (cuando el entorno cloud deje de ser solo demo)
+1. Configurar secret `SUPABASE_DB_URL` y lanzar el workflow a mano una vez
+2. Redeploy ACA cuando haga falta (`jwt-signing-key` + Supabase)
+3. Key Vault Azure (cuando el entorno cloud deje de ser solo demo)
 
 ## Explicitly deferred
 

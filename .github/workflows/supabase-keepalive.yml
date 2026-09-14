@@ -1,0 +1,30 @@
+# Mantiene vivo el free tier de Supabase (pausa ~7 días sin actividad).
+# Secret del repo: SUPABASE_DB_URL
+#   postgresql://postgres.<ref>:<PASSWORD>@aws-1-eu-west-3.pooler.supabase.com:5432/postgres
+# Usar session pooler (puerto 5432), no transaction (6543) ni host directo IPv6.
+
+name: Supabase keepalive
+
+on:
+  schedule:
+    # Cada 5 días a las 06:00 UTC (antes del umbral de 7 días).
+    - cron: "0 6 */5 * *"
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Install psql
+        run: sudo apt-get update && sudo apt-get install -y postgresql-client
+
+      - name: Ping database
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          if [ -z "$SUPABASE_DB_URL" ]; then
+            echo "Falta el secret SUPABASE_DB_URL en el repositorio."
+            exit 1
+          fi
+          psql "$SUPABASE_DB_URL" -v ON_ERROR_STOP=1 -c "select 1 as keep_alive, now() as at;"
