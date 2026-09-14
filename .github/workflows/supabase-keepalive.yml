@@ -1,7 +1,12 @@
 # Mantiene vivo el free tier de Supabase (pausa ~7 días sin actividad).
+#
 # Secret del repo: SUPABASE_DB_URL
+# Acepta URI de psql O cadena Npgsql (la de Aspire):
 #   postgresql://postgres.<ref>:<PASSWORD>@aws-1-eu-west-3.pooler.supabase.com:5432/postgres
-# Usar session pooler (puerto 5432), no transaction (6543) ni host directo IPv6.
+#   Host=...pooler.supabase.com;Port=5432;Database=postgres;Username=postgres.<ref>;Password=...;SSL Mode=Require;Trust Server Certificate=true
+#
+# Session pooler (5432). Usuario debe ser postgres.<project-ref>, no solo postgres.
+# En el dashboard: Settings → Database → Connect → Session pooler → copiar URI o parámetros.
 
 name: Supabase keepalive
 
@@ -27,4 +32,48 @@ jobs:
             echo "Falta el secret SUPABASE_DB_URL en el repositorio."
             exit 1
           fi
-          psql "$SUPABASE_DB_URL" -v ON_ERROR_STOP=1 -c "select 1 as keep_alive, now() as at;"
+
+          # Normaliza Npgsql → URI con password URL-encoded (evita fallos con @ # % etc.).
+          export DATABASE_URL="$(python3 - <<'PY'
+          import os, urllib.parse
+
+          raw = os.environ["SUPABASE_DB_URL"].strip().strip('"').strip("'")
+          if raw.startswith("postgres://") or raw.startswith("postgresql://"):
+              print(raw)
+              raise SystemExit(0)
+
+          parts = {}
+          for segment in raw.split(";"):
+              segment = segment.strip()
+              if not segment or "=" not in segment:
+                  continue
+              key, value = segment.split("=", 1)
+              parts[key.strip().lower()] = value.strip()
+
+          required = ("host", "username", "password")
+          missing = [k for k in required if k not in parts or not parts[k]]
+          if missing:
+              raise SystemExit(f"Cadena Npgsql incompleta; faltan: {', '.join(missing)}")
+
+          user = urllib.parse.quote(parts["username"], safe="")
+          password = urllib.parse.quote(parts["password"], safe="")
+          host = parts["host"]
+          port = parts.get("port") or "5432"
+          database = parts.get("database") or "postgres"
+          print(f"postgresql://{user}:{password}@{host}:{port}/{database}?sslmode=require")
+          PY
+          )"
+
+          # Diagnóstico sin secretos: muestra solo usuario/host/puerto parseados.
+          python3 - <<'PY'
+          import os, urllib.parse
+          u = urllib.parse.urlparse(os.environ["DATABASE_URL"])
+          user = urllib.parse.unquote(u.username or "")
+          print(f"Conectando a {u.hostname}:{u.port or 5432} como usuario '{user}' db '{(u.path or '/postgres').lstrip('/')}'")
+          if user == "postgres":
+              print("AVISO: en el pooler el usuario debe ser postgres.<project-ref>, no solo postgres.")
+          elif "." not in user:
+              print("AVISO: el usuario del pooler suele verse como postgres.<project-ref>.")
+          PY
+
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -c "select 1 as keep_alive, now() as at;"
