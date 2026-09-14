@@ -1,14 +1,10 @@
 # Mantiene vivo el free tier de Supabase (pausa ~7 días sin actividad).
 #
 # Secret del repo: SUPABASE_DB_URL
-#
-# Preferido (Npgsql — no se rompe si la password tiene @ # %):
+# Preferido (Npgsql):
 #   Host=aws-1-eu-west-3.pooler.supabase.com;Port=5432;Database=postgres;Username=postgres.gzcrrlazcodfhhjjntmn;Password=TU_PASSWORD;SSL Mode=Require;Trust Server Certificate=true
-#
-# También acepta URI (password sin caracteres raros, o ya URL-encoded):
+# También URI:
 #   postgresql://postgres.gzcrrlazcodfhhjjntmn:PASSWORD@aws-1-eu-west-3.pooler.supabase.com:5432/postgres
-#
-# En el pooler el usuario DEBE ser postgres.<project-ref>, no solo postgres.
 
 name: Supabase keepalive
 
@@ -22,83 +18,16 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
       - name: Install psql
         run: sudo apt-get update && sudo apt-get install -y postgresql-client
 
-      - name: Ping database
+      - name: Build connection info
         env:
           SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
-        run: |
-          if [ -z "$SUPABASE_DB_URL" ]; then
-            echo "Falta el secret SUPABASE_DB_URL en el repositorio."
-            exit 1
-          fi
+        run: python3 .github/scripts/supabase_conninfo.py
 
-          export DATABASE_URL="$(python3 - <<'PY'
-          import os, urllib.parse
-
-          raw = os.environ["SUPABASE_DB_URL"].strip().strip('"').strip("'")
-
-          def build_uri(host: str, port: str, database: str, username: str, password: str) -> str:
-              user = urllib.parse.quote(username, safe="")
-              pwd = urllib.parse.quote(password, safe="")
-              return f"postgresql://{user}:{pwd}@{host}:{port}/{database}?sslmode=require"
-
-          def validate(host: str, username: str) -> None:
-              if "pooler.supabase.com" in host and username == "postgres":
-                  raise SystemExit(
-                      "Usuario mal parseado: llegó 'postgres' pero el pooler exige "
-                      "'postgres.<project-ref>'. Usa formato Npgsql en el secret, por ejemplo:\n"
-                      "Host=...pooler.supabase.com;Port=5432;Database=postgres;"
-                      "Username=postgres.gzcrrlazcodfhhjjntmn;Password=...;"
-                      "SSL Mode=Require;Trust Server Certificate=true"
-                  )
-              if "pooler.supabase.com" in host and "." not in username:
-                  raise SystemExit(
-                      f"Usuario '{username}' no parece de pooler (falta el project-ref tras el punto)."
-                  )
-
-          if raw.startswith("postgres://") or raw.startswith("postgresql://"):
-              # Re-encodea por si la password trae caracteres especiales ya escapados.
-              u = urllib.parse.urlparse(raw)
-              host = u.hostname or ""
-              port = str(u.port or 5432)
-              database = (u.path or "/postgres").lstrip("/") or "postgres"
-              username = urllib.parse.unquote(u.username or "")
-              password = urllib.parse.unquote(u.password or "")
-              # Si la password tenía '@' sin encodear, urlparse deja user='postgres'
-              # y mete el resto en hostname — detectamos username corto en pooler.
-              validate(host, username)
-              if not password:
-                  raise SystemExit("La URI no tiene password (¿dejaste [YOUR-PASSWORD]?).")
-              print(build_uri(host, port, database, username, password))
-              raise SystemExit(0)
-
-          parts = {}
-          for segment in raw.split(";"):
-              segment = segment.strip()
-              if not segment or "=" not in segment:
-                  continue
-              key, value = segment.split("=", 1)
-              parts[key.strip().lower()] = value.strip()
-
-          required = ("host", "username", "password")
-          missing = [k for k in required if k not in parts or not parts[k]]
-          if missing:
-              raise SystemExit(f"Cadena Npgsql incompleta; faltan: {', '.join(missing)}")
-
-          host = parts["host"]
-          username = parts["username"]
-          validate(host, username)
-          print(build_uri(host, parts.get("port") or "5432", parts.get("database") or "postgres", username, parts["password"]))
-          PY
-          )"
-
-          python3 - <<'PY'
-          import os, urllib.parse
-          u = urllib.parse.urlparse(os.environ["DATABASE_URL"])
-          user = urllib.parse.unquote(u.username or "")
-          print(f"Conectando a {u.hostname}:{u.port or 5432} como usuario '{user}'")
-          PY
-
-          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -c "select 1 as keep_alive, now() as at;"
+      - name: Ping database
+        run: psql "$PG_CONNINFO" -v ON_ERROR_STOP=1 -c "select 1 as keep_alive, now() as at;"
