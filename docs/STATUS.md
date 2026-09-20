@@ -6,7 +6,7 @@
 ## Done (reciente)
 
 ### Supabase keepalive (GitHub Action)
-- Workflow `.github/workflows/supabase-keepalive.yml` (cron cada 5 días + manual)
+- Workflow `.github/workflows/supabase-keepalive.yml` (cron cada 2 días + manual)
 - Secret `SUPABASE_DB_URL`: URI **o** cadena Npgsql del session pooler (usuario `postgres.<ref>`, puerto 5432)
 
 ### HUD offline — ruta cacheada

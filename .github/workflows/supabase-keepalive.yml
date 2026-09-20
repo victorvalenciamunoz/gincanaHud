@@ -7,7 +7,8 @@ name: Supabase keepalive
 
 on:
   schedule:
-    - cron: "0 6 */5 * *"
+    # Cada 2 días a las 06:00 UTC (el free tier avisa ~7 días sin actividad).
+    - cron: "0 6 */2 * *"
   workflow_dispatch:
 
 jobs:
