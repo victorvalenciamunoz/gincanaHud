@@ -6,8 +6,9 @@
 ## Done (reciente)
 
 ### Supabase keepalive (GitHub Action)
-- Workflow `.github/workflows/supabase-keepalive.yml` (cron cada 2 días + manual)
+- Workflow `.github/workflows/supabase-keepalive.yml` (cron **diario** + manual)
 - Secret `SUPABASE_DB_URL`: URI **o** cadena Npgsql del session pooler (usuario `postgres.<ref>`, puerto 5432)
+- El ping hace UPDATE en `keepalive_ping` + SELECT a tablas de la app (un `select 1` no bastaba)
 
 ### HUD offline — ruta cacheada
 - Tras Unirse se guarda el detalle de la actividad en el teléfono

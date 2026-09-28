@@ -120,7 +120,24 @@ def main() -> None:
     )
 
     result = subprocess.run(
-        ["psql", "-v", "ON_ERROR_STOP=1", "-c", "select 1 as keep_alive, now() as at;"],
+        [
+            "psql",
+            "-v",
+            "ON_ERROR_STOP=1",
+            "-c",
+            """
+-- Actividad real (Supabase pide "user database activity" casi diaria).
+create table if not exists public.keepalive_ping (
+  id smallint primary key default 1,
+  last_ping timestamptz not null default now()
+);
+insert into public.keepalive_ping (id) values (1) on conflict (id) do nothing;
+update public.keepalive_ping set last_ping = now() where id = 1;
+select count(*) as organizations from public."Organizations";
+select count(*) as activities from public."Activities";
+select last_ping from public.keepalive_ping where id = 1;
+""",
+        ],
         env=env,
         check=False,
     )
