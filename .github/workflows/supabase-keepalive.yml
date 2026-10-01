@@ -1,12 +1,9 @@
 # Mantiene vivo el free tier de Supabase.
 # Un ping no basta: cada run hace un burst de queries SQL (+ REST si hay secrets).
 #
-# Secrets:
-#   SUPABASE_DB_URL (obligatorio)
-#   SUPABASE_URL + SUPABASE_ANON_KEY (muy recomendable — actividad vía PostgREST)
-#
-# Ejemplo Npgsql:
-#   Host=aws-1-eu-west-3.pooler.supabase.com;Port=5432;Database=postgres;Username=postgres.gzcrrlazcodfhhjjntmn;Password=...;SSL Mode=Require;Trust Server Certificate=true
+# Secrets (GitHub → Settings → Secrets):
+#   SUPABASE_DB_URL (obligatorio) — connection string del session pooler (Npgsql o URI)
+#   SUPABASE_URL + SUPABASE_ANON_KEY (recomendable) — ping REST
 
 name: Supabase keepalive
 

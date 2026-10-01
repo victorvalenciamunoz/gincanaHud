@@ -196,7 +196,7 @@ def main() -> None:
     if "pooler.supabase.com" in host and (username == "postgres" or "." not in username):
         fail(
             f"Usuario del pooler incorrecto: '{username}'. "
-            "Debe ser postgres.<project-ref>, p.ej. postgres.gzcrrlazcodfhhjjntmn"
+            "Debe ser postgres.<project-ref> (session pooler), no solo postgres."
         )
 
     print(f"::add-mask::{password}")

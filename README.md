@@ -28,13 +28,7 @@ Despliegue a **Azure Container Apps** (Api + Admin). Postgres en Azure va a **Su
 
 Prerrequisitos: Docker Desktop en marcha, `az login`, Aspire CLI (`aspire`), proyecto en [supabase.com](https://supabase.com).
 
-Connection string de Supabase: **Project Settings → Database → Connection string → URI**, modo **Session** del pooler (puerto `5432` en el host `*.pooler.supabase.com`). Tradúcela a Npgsql:
-
-```text
-Host=aws-0-eu-central-1.pooler.supabase.com;Port=5432;Database=postgres;Username=postgres.<PROJECT_REF>;Password=<DB_PASSWORD>;SSL Mode=Require;Trust Server Certificate=true
-```
-
-(La región del pooler sale en el panel de Supabase; no copies esta de ejemplo.)
+Connection string de Supabase: en el dashboard → **Project Settings → Database → Connect → Session pooler** (puerto 5432). Cópiala desde allí (URI o parámetros) y úsala solo en secrets / variables de entorno — **no la pegues en el repo**.
 
 ```bash
 # Una vez
@@ -43,7 +37,8 @@ aspire secret set "Azure:Location" "westeurope" --apphost src/GincanaHud.AppHost
 aspire secret set "Azure:ResourceGroup" "rg-gincanahud-demo" --apphost src/GincanaHud.AppHost/GincanaHud.AppHost.csproj
 
 # PowerShell: el '-' en el nombre de la variable de entorno no vale con $env:
-Set-Item -Path "Env:ConnectionStrings__gincanahud" -Value "Host=...;SSL Mode=Require;Trust Server Certificate=true"
+# Pon la connection string de Supabase en ConnectionStrings__gincanahud (no en ficheros del repo).
+Set-Item -Path "Env:ConnectionStrings__gincanahud" -Value "<pegar-desde-supabase>"
 # o: aspire secret set "ConnectionStrings:gincanahud" "<npgsql>" --apphost src/GincanaHud.AppHost/GincanaHud.AppHost.csproj
 
 aspire deploy --apphost src/GincanaHud.AppHost/GincanaHud.AppHost.csproj
