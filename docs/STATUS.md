@@ -6,10 +6,10 @@
 ## Done (reciente)
 
 ### Supabase keepalive (GitHub Action)
-- Workflow cron **2× al día** (06:00 y 18:00 UTC) + manual
-- Secret obligatorio: `SUPABASE_DB_URL` (session pooler)
-- Opcional: `SUPABASE_URL` + `SUPABASE_ANON_KEY` para ping REST (mejor “user activity”)
-- El ping solo toca `public.keepalive_ping` (ya no SELECT a tablas de la app)
+- Cada run hace un **burst** (varias queries SQL; REST si hay secrets) — un solo ping no basta
+- Cron diario + manual
+- Obligatorio: `SUPABASE_DB_URL`
+- Recomendado: `SUPABASE_URL` + `SUPABASE_ANON_KEY` (actividad vía API, lo que Supabase cuenta mejor)
 
 ### HUD offline — ruta cacheada
 - Tras Unirse se guarda el detalle de la actividad en el teléfono

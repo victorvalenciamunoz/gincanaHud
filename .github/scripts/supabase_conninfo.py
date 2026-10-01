@@ -1,13 +1,23 @@
 #!/usr/bin/env python3
-"""Lee SUPABASE_DB_URL y hace ping de actividad (DDL mínimo + UPDATE)."""
+"""Genera actividad de BD suficiente para el free tier de Supabase.
+
+Un solo SELECT/UPDATE no basta: la doc pide varias peticiones de usuario
+al día. Este script hace varias rondas SQL y, si hay secrets, varias llamadas REST.
+"""
 from __future__ import annotations
 
 import os
 import re
 import subprocess
 import sys
+import time
+import urllib.error
 import urllib.parse
 import urllib.request
+
+# Cuántas rondas por run (cada una = varias queries).
+SQL_ROUNDS = 8
+REST_ROUNDS = 8
 
 KNOWN_NPGSQL_KEYS = (
     "host",
@@ -84,27 +94,15 @@ def parse_secret(raw: str) -> tuple[str, str, str, str, str]:
     )
 
 
-def ping_via_psql(host: str, port: str, database: str, username: str, password: str) -> int:
-    env = os.environ.copy()
-    env.update(
-        {
-            "PGHOST": host,
-            "PGPORT": port,
-            "PGDATABASE": database,
-            "PGUSER": username,
-            "PGPASSWORD": password,
-            "PGSSLMODE": "require",
-        }
-    )
-
-    # Solo keepalive_ping: no toca tablas de la app (evita fallos a medias / "BD rara").
+def ensure_keepalive_table(env: dict[str, str]) -> None:
     sql = """
 create table if not exists public.keepalive_ping (
   id smallint primary key default 1,
-  last_ping timestamptz not null default now()
+  last_ping timestamptz not null default now(),
+  hit_count bigint not null default 0
 );
+alter table public.keepalive_ping add column if not exists hit_count bigint not null default 0;
 insert into public.keepalive_ping (id) values (1) on conflict (id) do nothing;
-update public.keepalive_ping set last_ping = now() where id = 1;
 alter table public.keepalive_ping enable row level security;
 do $$ begin
   create policy keepalive_ping_anon_select
@@ -113,40 +111,74 @@ exception when duplicate_object then null;
 end $$;
 grant usage on schema public to anon, authenticated;
 grant select on public.keepalive_ping to anon, authenticated;
-select id, last_ping from public.keepalive_ping where id = 1;
 """
-    return subprocess.run(
+    result = subprocess.run(
         ["psql", "-v", "ON_ERROR_STOP=1", "-c", sql],
         env=env,
         check=False,
-    ).returncode
+    )
+    if result.returncode != 0:
+        fail("No se pudo preparar la tabla keepalive_ping.")
 
 
-def ping_via_rest() -> None:
-    """Actividad 'de usuario' vía PostgREST (opcional; secrets SUPABASE_URL + SUPABASE_ANON_KEY)."""
+def sql_activity_burst(env: dict[str, str], rounds: int) -> None:
+    # Varias conexiones/rondas: más señales de "user database activity".
+    for i in range(1, rounds + 1):
+        sql = f"""
+update public.keepalive_ping
+  set last_ping = now(), hit_count = hit_count + 1
+  where id = 1;
+select id, last_ping, hit_count from public.keepalive_ping where id = 1;
+select count(*) as keepalive_rows from public.keepalive_ping;
+select now() as wall_clock_{i};
+"""
+        result = subprocess.run(
+            ["psql", "-v", "ON_ERROR_STOP=1", "-c", sql],
+            env=env,
+            check=False,
+        )
+        if result.returncode != 0:
+            fail(f"Fallo en ronda SQL {i}/{rounds}.")
+        print(f"SQL round {i}/{rounds} OK", file=sys.stderr)
+        time.sleep(0.4)
+
+
+def rest_activity_burst(rounds: int) -> None:
     base = os.environ.get("SUPABASE_URL", "").strip().rstrip("/")
     key = os.environ.get("SUPABASE_ANON_KEY", "").strip()
     if not base or not key:
-        print("REST opcional omitido (sin SUPABASE_URL / SUPABASE_ANON_KEY).", file=sys.stderr)
+        print(
+            "AVISO: sin SUPABASE_URL + SUPABASE_ANON_KEY el ping REST no corre. "
+            "Supabase valora más las peticiones vía API; conviene añadir esos secrets.",
+            file=sys.stderr,
+        )
         return
 
-    url = f"{base}/rest/v1/keepalive_ping?select=id,last_ping&limit=1"
-    req = urllib.request.Request(
-        url,
-        headers={
-            "apikey": key,
-            "Authorization": f"Bearer {key}",
-            "Accept": "application/json",
-        },
-        method="GET",
-    )
-    try:
-        with urllib.request.urlopen(req, timeout=30) as resp:
-            body = resp.read().decode("utf-8", errors="replace")
-            print(f"REST OK status={resp.status} body={body[:200]}", file=sys.stderr)
-    except Exception as ex:
-        # No tumba el job: el ping SQL ya corrió. Avisa para configurar RLS/anon.
-        print(f"REST ping falló (¿RLS/anon?): {ex}", file=sys.stderr)
+    url = f"{base}/rest/v1/keepalive_ping?select=id,last_ping,hit_count&limit=1"
+    ok = 0
+    for i in range(1, rounds + 1):
+        req = urllib.request.Request(
+            url,
+            headers={
+                "apikey": key,
+                "Authorization": f"Bearer {key}",
+                "Accept": "application/json",
+            },
+            method="GET",
+        )
+        try:
+            with urllib.request.urlopen(req, timeout=30) as resp:
+                _ = resp.read()
+                ok += 1
+                print(f"REST round {i}/{rounds} OK status={resp.status}", file=sys.stderr)
+        except urllib.error.HTTPError as ex:
+            body = ex.read().decode("utf-8", errors="replace")[:300]
+            fail(f"REST round {i} HTTP {ex.code}: {body}")
+        except Exception as ex:
+            fail(f"REST round {i} falló: {ex}")
+        time.sleep(0.3)
+
+    print(f"REST burst complete ({ok}/{rounds})", file=sys.stderr)
 
 
 def main() -> None:
@@ -169,16 +201,27 @@ def main() -> None:
 
     print(f"::add-mask::{password}")
     print(
-        f"Ping host={host} port={port} db={database} user={username} password_len={len(password)}",
+        f"Burst host={host} port={port} db={database} user={username} "
+        f"sql_rounds={SQL_ROUNDS} rest_rounds={REST_ROUNDS}",
         file=sys.stderr,
     )
 
-    code = ping_via_psql(host, port, database, username, password)
-    if code != 0:
-        raise SystemExit(code)
+    env = os.environ.copy()
+    env.update(
+        {
+            "PGHOST": host,
+            "PGPORT": port,
+            "PGDATABASE": database,
+            "PGUSER": username,
+            "PGPASSWORD": password,
+            "PGSSLMODE": "require",
+        }
+    )
 
-    ping_via_rest()
-    raise SystemExit(0)
+    ensure_keepalive_table(env)
+    sql_activity_burst(env, SQL_ROUNDS)
+    rest_activity_burst(REST_ROUNDS)
+    print("Keepalive burst finished.", file=sys.stderr)
 
 
 if __name__ == "__main__":

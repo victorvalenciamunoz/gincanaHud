@@ -1,8 +1,9 @@
-# Mantiene vivo el free tier de Supabase (pausa ~7 días sin actividad).
+# Mantiene vivo el free tier de Supabase.
+# Un ping no basta: cada run hace un burst de queries SQL (+ REST si hay secrets).
 #
 # Secrets:
-#   SUPABASE_DB_URL (obligatorio) — Npgsql o URI del session pooler
-#   SUPABASE_URL + SUPABASE_ANON_KEY (opcionales) — ping REST a keepalive_ping
+#   SUPABASE_DB_URL (obligatorio)
+#   SUPABASE_URL + SUPABASE_ANON_KEY (muy recomendable — actividad vía PostgREST)
 #
 # Ejemplo Npgsql:
 #   Host=aws-1-eu-west-3.pooler.supabase.com;Port=5432;Database=postgres;Username=postgres.gzcrrlazcodfhhjjntmn;Password=...;SSL Mode=Require;Trust Server Certificate=true
@@ -11,14 +12,14 @@ name: Supabase keepalive
 
 on:
   schedule:
-    # 2 veces al día (06:00 y 18:00 UTC). GitHub a veces se salta un cron diario.
-    - cron: "0 6,18 * * *"
+    # Diario 06:00 UTC + manual. La cantidad de actividad va en el script (burst).
+    - cron: "0 6 * * *"
   workflow_dispatch:
 
 jobs:
   ping:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 10
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -26,7 +27,7 @@ jobs:
       - name: Install psql
         run: sudo apt-get update && sudo apt-get install -y postgresql-client
 
-      - name: Ping database
+      - name: Keepalive burst
         env:
           SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
