@@ -1,14 +1,18 @@
 # Mantiene vivo el free tier de Supabase (pausa ~7 días sin actividad).
 #
-# Secret: SUPABASE_DB_URL (Npgsql preferido)
+# Secrets:
+#   SUPABASE_DB_URL (obligatorio) — Npgsql o URI del session pooler
+#   SUPABASE_URL + SUPABASE_ANON_KEY (opcionales) — ping REST a keepalive_ping
+#
+# Ejemplo Npgsql:
 #   Host=aws-1-eu-west-3.pooler.supabase.com;Port=5432;Database=postgres;Username=postgres.gzcrrlazcodfhhjjntmn;Password=...;SSL Mode=Require;Trust Server Certificate=true
 
 name: Supabase keepalive
 
 on:
   schedule:
-    # Diario: Supabase pide "unas pocas peticiones al día" en la semana.
-    - cron: "0 6 * * *"
+    # 2 veces al día (06:00 y 18:00 UTC). GitHub a veces se salta un cron diario.
+    - cron: "0 6,18 * * *"
   workflow_dispatch:
 
 jobs:
@@ -25,4 +29,6 @@ jobs:
       - name: Ping database
         env:
           SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
         run: python3 .github/scripts/supabase_conninfo.py

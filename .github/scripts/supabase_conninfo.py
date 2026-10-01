@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Lee SUPABASE_DB_URL y ejecuta un ping con psql en el mismo proceso."""
+"""Lee SUPABASE_DB_URL y hace ping de actividad (DDL mínimo + UPDATE)."""
 from __future__ import annotations
 
 import os
@@ -7,6 +7,7 @@ import re
 import subprocess
 import sys
 import urllib.parse
+import urllib.request
 
 KNOWN_NPGSQL_KEYS = (
     "host",
@@ -83,6 +84,71 @@ def parse_secret(raw: str) -> tuple[str, str, str, str, str]:
     )
 
 
+def ping_via_psql(host: str, port: str, database: str, username: str, password: str) -> int:
+    env = os.environ.copy()
+    env.update(
+        {
+            "PGHOST": host,
+            "PGPORT": port,
+            "PGDATABASE": database,
+            "PGUSER": username,
+            "PGPASSWORD": password,
+            "PGSSLMODE": "require",
+        }
+    )
+
+    # Solo keepalive_ping: no toca tablas de la app (evita fallos a medias / "BD rara").
+    sql = """
+create table if not exists public.keepalive_ping (
+  id smallint primary key default 1,
+  last_ping timestamptz not null default now()
+);
+insert into public.keepalive_ping (id) values (1) on conflict (id) do nothing;
+update public.keepalive_ping set last_ping = now() where id = 1;
+alter table public.keepalive_ping enable row level security;
+do $$ begin
+  create policy keepalive_ping_anon_select
+    on public.keepalive_ping for select to anon using (true);
+exception when duplicate_object then null;
+end $$;
+grant usage on schema public to anon, authenticated;
+grant select on public.keepalive_ping to anon, authenticated;
+select id, last_ping from public.keepalive_ping where id = 1;
+"""
+    return subprocess.run(
+        ["psql", "-v", "ON_ERROR_STOP=1", "-c", sql],
+        env=env,
+        check=False,
+    ).returncode
+
+
+def ping_via_rest() -> None:
+    """Actividad 'de usuario' vía PostgREST (opcional; secrets SUPABASE_URL + SUPABASE_ANON_KEY)."""
+    base = os.environ.get("SUPABASE_URL", "").strip().rstrip("/")
+    key = os.environ.get("SUPABASE_ANON_KEY", "").strip()
+    if not base or not key:
+        print("REST opcional omitido (sin SUPABASE_URL / SUPABASE_ANON_KEY).", file=sys.stderr)
+        return
+
+    url = f"{base}/rest/v1/keepalive_ping?select=id,last_ping&limit=1"
+    req = urllib.request.Request(
+        url,
+        headers={
+            "apikey": key,
+            "Authorization": f"Bearer {key}",
+            "Accept": "application/json",
+        },
+        method="GET",
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=30) as resp:
+            body = resp.read().decode("utf-8", errors="replace")
+            print(f"REST OK status={resp.status} body={body[:200]}", file=sys.stderr)
+    except Exception as ex:
+        # No tumba el job: el ping SQL ya corrió. Avisa para configurar RLS/anon.
+        print(f"REST ping falló (¿RLS/anon?): {ex}", file=sys.stderr)
+
+
 def main() -> None:
     host, port, database, username, password = parse_secret(os.environ.get("SUPABASE_DB_URL", ""))
 
@@ -107,41 +173,12 @@ def main() -> None:
         file=sys.stderr,
     )
 
-    env = os.environ.copy()
-    env.update(
-        {
-            "PGHOST": host,
-            "PGPORT": port,
-            "PGDATABASE": database,
-            "PGUSER": username,
-            "PGPASSWORD": password,
-            "PGSSLMODE": "require",
-        }
-    )
+    code = ping_via_psql(host, port, database, username, password)
+    if code != 0:
+        raise SystemExit(code)
 
-    result = subprocess.run(
-        [
-            "psql",
-            "-v",
-            "ON_ERROR_STOP=1",
-            "-c",
-            """
--- Actividad real (Supabase pide "user database activity" casi diaria).
-create table if not exists public.keepalive_ping (
-  id smallint primary key default 1,
-  last_ping timestamptz not null default now()
-);
-insert into public.keepalive_ping (id) values (1) on conflict (id) do nothing;
-update public.keepalive_ping set last_ping = now() where id = 1;
-select count(*) as organizations from public."Organizations";
-select count(*) as activities from public."Activities";
-select last_ping from public.keepalive_ping where id = 1;
-""",
-        ],
-        env=env,
-        check=False,
-    )
-    raise SystemExit(result.returncode)
+    ping_via_rest()
+    raise SystemExit(0)
 
 
 if __name__ == "__main__":
