@@ -7,9 +7,9 @@
 </div>
 
 @code {
-    [Parameter] public double CenterLat { get; set; } = 40.4168;
-    [Parameter] public double CenterLon { get; set; } = -3.7038;
-    [Parameter] public int Zoom { get; set; } = 13;
+    [Parameter] public double CenterLat { get; set; } = 48.0;
+    [Parameter] public double CenterLon { get; set; } = 9.0;
+    [Parameter] public int Zoom { get; set; } = 4;
     [Parameter] public IReadOnlyList<MapPoiMarker>? Pois { get; set; }
     [Parameter] public EventCallback<(double Lat, double Lon)> LocationPicked { get; set; }
 
