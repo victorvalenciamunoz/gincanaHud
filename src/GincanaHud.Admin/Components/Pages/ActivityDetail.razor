@@ -53,7 +53,7 @@ else if (_detail is not null)
 
     <h2>Mapa — colocar / mover POI</h2>
     <div class="form-row">
-        <input @bind="_search" @bind:event="oninput" placeholder="Buscar lugar (ej. León, España)" style="min-width:260px;flex:1" />
+        <input @bind="_search" @bind:event="oninput" placeholder="Buscar lugar (ej. Torre Eiffel, París)" style="min-width:260px;flex:1" />
         <button type="button" @onclick="SearchPlaceAsync" disabled="@_busy">Ir al mapa</button>
     </div>
     @if (_hits is { Count: > 0 })
@@ -71,7 +71,7 @@ else if (_detail is not null)
     <PoiMap @ref="_map"
             CenterLat="@_mapLat"
             CenterLon="@_mapLon"
-            Zoom="13"
+            Zoom="4"
             Pois="_mapPois"
             LocationPicked="OnPickedAsync" />
 
@@ -177,8 +177,8 @@ else if (_detail is not null)
     string _search = "";
     List<GeocodeHit>? _hits;
     PoiMap? _map;
-    double _mapLat = 40.4168;
-    double _mapLon = -3.7038;
+    double _mapLat = 48.0;
+    double _mapLon = 9.0;
 
     string _poiName = "";
     string _lat = "";
@@ -257,7 +257,7 @@ else if (_detail is not null)
             if (_hits.Count == 1)
                 await GoToHitAsync(_hits[0]);
             else if (_hits.Count == 0)
-                _message = "Sin resultados. Prueba «León, España».";
+                _message = "Sin resultados. Prueba «Torre Eiffel, París».";
         }
         catch (Exception ex) { _message = $"Geocoding: {ex.Message}"; }
         finally { _busy = false; }
