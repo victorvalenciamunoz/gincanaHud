@@ -71,11 +71,13 @@ Use **`Microsoft.Extensions.Http.Resilience`** (`AddStandardResilienceHandler`) 
 
 ## D11 — Admin: mapa para colocar POIs
 
-Los POIs de una actividad se pueden crear **sin estar en el sitio** (ej. preparar León desde Madrid):
+Los POIs de una actividad se pueden crear **sin estar en el sitio** (preparar desde casa un evento en otra ciudad):
 
 - Mapa **Leaflet** + tiles OSM en el detalle de actividad del Admin.
 - Búsqueda de lugar vía **Nominatim** (HttpClient server-side; User-Agent propio).
 - Clic en el mapa → Lat/Lon del formulario → `POST .../activities/{id}/pois`.
+- El mapa se abre centrado en los POIs de la actividad; si no hay ninguno, en la vista de Europa entera.
+  Ningún sitio real como centro por defecto ni como ejemplo de búsqueda: el repo es público.
 - La app MAUI no sustituye esto: el HUD sigue siendo captura en calle; el mapa es herramienta de autoría.
 
 ## D12 — Aspire y launch desde el IDE
@@ -207,7 +209,7 @@ Flujo jugador: escanear QR o teclear código → nombre (+ contacto) → jugar �
 - Permisos finos por pantalla más allá de rol + org.
 - JWT / auth para el jugador móvil.
 
-## D18 — Modo de ruta: secuencial vs libre
+## D19 — Modo de ruta: secuencial vs libre
 
 `Activity.RouteMode`:
 
