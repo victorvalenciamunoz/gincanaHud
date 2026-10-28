@@ -9,7 +9,9 @@ Lo cerrado hasta la fase 11 está en `docs/historia.md`.
 
 - [x] Paso 0 — documentación base (2026-10-28): `CLAUDE.md` sin `AGENTS.md` ni reglas de Cursor, `VISION.md`,
   `PLAN.md`, `historia.md`; D18 duplicada pasa a D19. Validado con `dotnet build` (no hay tests).
-- [ ] Paso 1 — análisis de la opción B (panel en WebAssembly + Api en Functions de Static Web Apps).
+- [x] Paso 1 — análisis (2026-10-28): decisión D20 (Static Web Apps Free + Functions .NET 10 + Supabase).
+  Límites comprobados en la documentación oficial; pasos 2–5 en `PLAN.md`.
+- [ ] Paso 2 — esquema con migraciones de EF Core y seeder fuera del arranque.
 - Nada desplegado en Azure: el grupo de recursos de la demo (`rg-gincanahud-demo`) está borrado.
 - Los datos siguen en Supabase. El keepalive diario pasa en verde (último: 2026-10-28) con los tres secretos
   configurados.

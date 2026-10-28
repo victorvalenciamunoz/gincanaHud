@@ -26,11 +26,21 @@ Hoy el despliegue en Azure Container Apps cuesta dinero aunque no se use: el reg
 Se quiere un despliegue que se pueda dejar siempre puesto sin coste, como AgendaMonitores (Static Web Apps Free +
 Supabase Free + GitHub Actions).
 
-- **Paso 1 — Análisis (sin código).** Qué supone pasar el panel a Blazor WebAssembly y la Api a Functions de
-  Static Web Apps, pieza a pieza: login (cookie → token en el navegador), ranking en directo, búsqueda de lugares,
-  QR, arranque en frío, límites del plan gratuito, y si alguna alternativa sale más barata en esfuerzo.
-  Termina con una decisión en `DECISIONS.md` y los pasos siguientes escritos aquí.
-- Pasos siguientes: se definen al cerrar el análisis.
+- **Paso 1 — Análisis (sin código).** Hecho: decisión D20.
+- **Paso 2 — Esquema y seeder.** Tablas con migraciones de EF Core; el seeder (SuperAdmin inicial, actividad de
+  demo) sale del arranque de la Api y pasa a un paso aparte.
+  *Bueno cuando:* el AppHost arranca como hoy y la app móvil juega contra él.
+- **Paso 3 — Api → Functions.** `GincanaHud.Api` pasa a proyecto de Functions .NET 10 isolated; los 28 endpoints,
+  a funciones; JWT en un middleware; salud en `/api/health`; Aspire lanza las Functions en local.
+  Antes de empezar, se propone cómo partirlo.
+  *Bueno cuando:* la app móvil se une, captura y ve el ranking contra las Functions en local, y el panel actual
+  sigue funcionando contra ellas.
+- **Paso 4 — Panel → WebAssembly.** Login con token en el navegador (12 h), fuera los usos de `HttpContext`,
+  función intermediaria para Nominatim. Antes de empezar, se propone cómo partirlo.
+  *Bueno cuando:* en local, login con los dos roles, crear actividad, colocar POIs, ver el QR y seguir el directo.
+- **Paso 5 — Despliegue.** GitHub Action a Static Web Apps Free que aplica también las migraciones en Supabase;
+  la app MAUI apunta a la URL nueva; se retira lo de Container Apps (D18).
+  *Bueno cuando:* se cumple el juez de la fase.
 
 **Juez:** con la app desplegada y un evento de prueba completo (unirse, capturar, ranking) jugado desde el móvil
 contra la nube, la factura de Azure de ese mes es 0 €.
