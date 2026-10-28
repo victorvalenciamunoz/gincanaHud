@@ -27,8 +27,8 @@ Se quiere un despliegue que se pueda dejar siempre puesto sin coste, como Agenda
 Supabase Free + GitHub Actions).
 
 - **Paso 1 — Análisis (sin código).** Hecho: decisión D20.
-- **Paso 2 — Esquema y seeder.** Tablas con migraciones de EF Core; el seeder (SuperAdmin inicial, actividad de
-  demo) sale del arranque de la Api y pasa a un paso aparte.
+- **Paso 2 — Esquema y seeder.** Tablas con migraciones de EF Core. En local la Api las aplica y crea la demo al
+  arrancar; en la nube no toca el esquema ni crea la demo, solo asegura el SuperAdmin (D20).
   *Bueno cuando:* el AppHost arranca como hoy y la app móvil juega contra él.
 - **Paso 3 — Api → Functions.** `GincanaHud.Api` pasa a proyecto de Functions .NET 10 isolated; los 28 endpoints,
   a funciones; JWT en un middleware; salud en `/api/health`; Aspire lanza las Functions en local.

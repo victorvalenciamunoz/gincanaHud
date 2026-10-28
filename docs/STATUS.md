@@ -11,7 +11,17 @@ Lo cerrado hasta la fase 11 está en `docs/historia.md`.
   `PLAN.md`, `historia.md`; D18 duplicada pasa a D19. Validado con `dotnet build` (no hay tests).
 - [x] Paso 1 — análisis (2026-10-28): decisión D20 (Static Web Apps Free + Functions .NET 10 + Supabase).
   Límites comprobados en la documentación oficial; pasos 2–5 en `PLAN.md`.
-- [ ] Paso 2 — esquema con migraciones de EF Core y seeder fuera del arranque.
+- [x] Paso 2 — esquema con migraciones (2026-10-28): migración `InitialCreate` en `Api/Data/Migrations`.
+  `DbSeeder`: en Development aplica migraciones (una BD de Docker sin historial se borra y recrea), SuperAdmin y
+  demo; fuera de Development solo el SuperAdmin.
+  Validado en local, sin el móvil:
+  - Development: el volumen antiguo se recrea; segundo arranque sin cambios; unirse a `DEMO01` → 200.
+  - Production contra una BD vacía: la Api no crea tablas y falla al arrancar. Tras `dotnet ef database update`,
+    arranca, el login del SuperAdmin → 200 y no hay actividad de demo.
+- [ ] Paso 3 — Api → Functions (antes, propuesta de cómo partirlo).
+
+Para el paso 5: las tablas de Supabase se crearon sin migraciones. Hay que comprobar que su esquema coincide con
+`InitialCreate` y marcarla como aplicada antes del primer `database update`.
 - Nada desplegado en Azure: el grupo de recursos de la demo (`rg-gincanahud-demo`) está borrado.
 - Los datos siguen en Supabase. El keepalive diario pasa en verde (último: 2026-10-28) con los tres secretos
   configurados.
@@ -20,7 +30,6 @@ Lo cerrado hasta la fase 11 está en `docs/historia.md`.
 
 | Tema | Nota |
 |------|------|
-| Esquema | Sin migraciones: si faltan tablas, el seeder recrea la BD (solo Development). |
 | Crash Android `jumpToEnd` | Bug de IDs tras Fast Deployment (.NET 11). `EmbedAssembliesIntoApk=true`. Si vuelve: desinstalar la app y redesplegar. |
 | Sin tests ni CI de build | No hay proyecto de tests; el único workflow es el keepalive. |
 | Paquetes vulnerables | El build avisa: `Microsoft.OpenApi` 2.0.0 (alta, Api) y `MessagePack` 2.5.302 (moderada, viene con Aspire en el AppHost). |

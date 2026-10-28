@@ -239,8 +239,12 @@ documentación oficial.
   proyecto `GincanaHud.Api` se convierte en proyecto de Functions: dominio, handlers, mediador y ErrorOr no cambian;
   cada endpoint Minimal API pasa a ser una función HTTP. JWT validado en un middleware propio.
 - Postgres sigue en **Supabase Free**. El esquema pasa a **migraciones de EF Core** (ya se usa EF; en
-  AgendaMonitores se eligió SQL a mano porque usa Dapper) y el seeder sale del arranque: en Functions se repetiría
-  en cada arranque en frío. Sustituye a la nota de esquema de D19.
+  AgendaMonitores se eligió SQL a mano porque usa Dapper). Sustituye a la nota de esquema de D19.
+  - En Development la Api aplica las migraciones y siembra la demo al arrancar; una BD de Docker anterior sin
+    historial de migraciones se borra y se recrea.
+  - Fuera de Development la Api no toca el esquema ni crea la demo: las migraciones las aplica el despliegue.
+    Al arrancar solo asegura el SuperAdmin de la configuración (una consulta y una verificación de contraseña,
+    ~0,1 s frente a 2–5 s de arranque en frío; no compensa sacarlo a otro proceso).
 - El token del panel se guarda en el navegador y dura lo mismo que ahora (12 h).
 - Búsqueda de lugares a través de una función intermediaria con caché (la política de Nominatim lo pide).
 - La salud de la Api pasa a `/api/health`: en Static Web Apps, `/health` lo contesta la web estática.

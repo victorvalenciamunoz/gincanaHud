@@ -4,8 +4,6 @@ using GincanaHud.Api.Domain.Organizations;
 using GincanaHud.Api.Domain.Users;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Infrastructure;
-using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.Options;
 using Npgsql;
 
@@ -25,35 +23,20 @@ public static class DbSeeder
 		IHostEnvironment environment,
 		CancellationToken ct = default)
 	{
-		try
+		// Outside Development the deployment applies the migrations (D20): never touch the schema or add demo data.
+		if (!environment.IsDevelopment())
 		{
-			await EnsureAppSchemaAsync(db, ct);
-			_ = await db.Organizations.AnyAsync(ct);
-			_ = await db.Activities.Select(a => a.JoinCode).AnyAsync(ct);
-			_ = await db.Activities.Select(a => a.RouteMode).AnyAsync(ct);
-			_ = await db.Users.Select(u => u.ContactEmail).AnyAsync(ct);
-			_ = await db.ActivityParticipants.AnyAsync(ct);
-			_ = await db.AdminUsers.AnyAsync(ct);
-			_ = await db.Pois.Select(p => p.OrganizationId).AnyAsync(ct);
-		}
-		catch
-		{
-			// Side project: sin migraciones. Schema desfasado → recrear limpio.
-			// Nunca EnsureDeleted contra Supabase / Azure: droparía la BBDD compartida.
-			if (!environment.IsDevelopment())
-				throw;
-
-			await db.Database.EnsureDeletedAsync(ct);
-			await db.Database.EnsureCreatedAsync(ct);
+			await EnsureSuperAdminAsync(db, passwordHasher, bootstrap.Value, ct);
+			return;
 		}
 
+		await MigrateDevelopmentDatabaseAsync(db, ct);
 		await EnsureSuperAdminAsync(db, passwordHasher, bootstrap.Value, ct);
 
 		if (await db.Activities.AnyAsync(ct))
 		{
-			// Dev: DEMO01 se crea con +7 días; si el volumen Docker persiste, caduca y el join da 400.
-			if (environment.IsDevelopment())
-				await RefreshDemoActivityWindowIfNeededAsync(db, ct);
+			// DEMO01 is created for +7 days; if the Docker volume persists it expires and join returns 400.
+			await RefreshDemoActivityWindowIfNeededAsync(db, ct);
 			return;
 		}
 
@@ -90,29 +73,25 @@ public static class DbSeeder
 		await db.SaveChangesAsync(ct);
 	}
 
-	private static async Task EnsureAppSchemaAsync(AppDbContext db, CancellationToken ct)
+	private static async Task MigrateDevelopmentDatabaseAsync(AppDbContext db, CancellationToken ct)
 	{
-		await db.Database.EnsureCreatedAsync(ct);
-
 		try
 		{
-			_ = await db.Organizations.AnyAsync(ct);
-			return;
+			await db.Database.MigrateAsync(ct);
 		}
-		catch (Exception ex) when (IsUndefinedTable(ex))
+		catch (Exception ex) when (IsDuplicateTable(ex))
 		{
-			// Supabase ya tiene la BBDD `postgres` (auth/storage). EnsureCreated no crea
-			// nuestras tablas si el servidor ya tiene cualquier relación.
-			var creator = db.GetService<IRelationalDatabaseCreator>();
-			await creator.CreateTablesAsync(ct);
+			// Docker volume created with EnsureCreated, before migrations existed: start clean.
+			await db.Database.EnsureDeletedAsync(ct);
+			await db.Database.MigrateAsync(ct);
 		}
 	}
 
-	private static bool IsUndefinedTable(Exception ex)
+	private static bool IsDuplicateTable(Exception ex)
 	{
 		for (var e = ex; e is not null; e = e.InnerException)
 		{
-			if (e is PostgresException pg && pg.SqlState == PostgresErrorCodes.UndefinedTable)
+			if (e is PostgresException pg && pg.SqlState == PostgresErrorCodes.DuplicateTable)
 				return true;
 		}
 
