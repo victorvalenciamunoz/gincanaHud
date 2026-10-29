@@ -1,20 +1,27 @@
 using GincanaHud.Api.Common.Http;
 using GincanaHud.Api.Common.Messaging;
+using GincanaHud.Api.Features.Activities.AddActivityPoi;
 using GincanaHud.Api.Features.Activities.CapturePoi;
+using GincanaHud.Api.Features.Activities.CreateActivity;
 using GincanaHud.Api.Features.Activities.GetActivity;
 using GincanaHud.Api.Features.Activities.GetActivityByCode;
+using GincanaHud.Api.Features.Activities.GetLiveProgress;
 using GincanaHud.Api.Features.Activities.GetRanking;
 using GincanaHud.Api.Features.Activities.JoinActivity;
 using GincanaHud.Api.Features.Activities.ListActivities;
 using GincanaHud.Api.Features.Activities.RegisterParticipant;
+using GincanaHud.Api.Features.Activities.RemoveActivityPoi;
+using GincanaHud.Api.Features.Activities.UpdateActivity;
+using GincanaHud.Api.Features.Activities.UpdateActivityPoi;
 using GincanaHud.Shared;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.Azure.Functions.Worker;
 
 namespace GincanaHud.Api.Features.Activities;
 
-// Mobile + Admin reads (anonymous).
 public sealed class ActivitiesFunctions(ISender sender)
 {
+	// Mobile + Admin reads (anonymous)
 	[Function("ListActivities")]
 	public async Task<IResult> List(
 		[HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "activities")] HttpRequest req,
@@ -85,6 +92,86 @@ public sealed class ActivitiesFunctions(ISender sender)
 		CancellationToken ct)
 	{
 		var result = await sender.Send(new GetRankingQuery(id), ct);
+		return result.ToHttpResult();
+	}
+
+	// Admin writes / live board
+	[Function("CreateActivity")]
+	[Authorize(Policy = JwtAuthExtensions.AdminPolicy)]
+	public Task<IResult> Create(
+		[HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "activities")] HttpRequest req,
+		CancellationToken ct) =>
+		req.WithJsonBodyAsync<CreateActivityRequest>(async body =>
+		{
+			var result = await sender.Send(new CreateActivityCommand(
+				body.OrganizationId,
+				body.Title,
+				body.Description,
+				body.StartsAt,
+				body.EndsAt,
+				body.RouteMode), ct);
+			return result.ToHttpResult(a => Results.Created($"/api/activities/{a.Id}", a));
+		}, ct);
+
+	[Function("UpdateActivity")]
+	[Authorize(Policy = JwtAuthExtensions.AdminPolicy)]
+	public Task<IResult> Update(
+		[HttpTrigger(AuthorizationLevel.Anonymous, "put", Route = "activities/{id:guid}")] HttpRequest req,
+		Guid id,
+		CancellationToken ct) =>
+		req.WithJsonBodyAsync<UpdateActivityRequest>(async body =>
+		{
+			var result = await sender.Send(
+				new UpdateActivityCommand(
+					id, body.Title, body.Description, body.IsActive, body.StartsAt, body.EndsAt, body.RouteMode), ct);
+			return result.ToHttpResult();
+		}, ct);
+
+	[Function("AddActivityPoi")]
+	[Authorize(Policy = JwtAuthExtensions.AdminPolicy)]
+	public Task<IResult> AddPoi(
+		[HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "activities/{id:guid}/pois")] HttpRequest req,
+		Guid id,
+		CancellationToken ct) =>
+		req.WithJsonBodyAsync<CreatePoiRequest>(async body =>
+		{
+			var result = await sender.Send(new AddActivityPoiCommand(id, body), ct);
+			return result.ToHttpResult(p => Results.Created($"/api/activities/{id}/pois/{p.PoiId}", p));
+		}, ct);
+
+	[Function("UpdateActivityPoi")]
+	[Authorize(Policy = JwtAuthExtensions.AdminPolicy)]
+	public Task<IResult> UpdatePoi(
+		[HttpTrigger(AuthorizationLevel.Anonymous, "put", Route = "activities/{id:guid}/pois/{poiId:guid}")] HttpRequest req,
+		Guid id,
+		Guid poiId,
+		CancellationToken ct) =>
+		req.WithJsonBodyAsync<UpdateActivityPoiRequest>(async body =>
+		{
+			var result = await sender.Send(new UpdateActivityPoiCommand(id, poiId, body), ct);
+			return result.ToHttpResult();
+		}, ct);
+
+	[Function("RemoveActivityPoi")]
+	[Authorize(Policy = JwtAuthExtensions.AdminPolicy)]
+	public async Task<IResult> RemovePoi(
+		[HttpTrigger(AuthorizationLevel.Anonymous, "delete", Route = "activities/{id:guid}/pois/{poiId:guid}")] HttpRequest req,
+		Guid id,
+		Guid poiId,
+		CancellationToken ct)
+	{
+		var result = await sender.Send(new RemoveActivityPoiCommand(id, poiId), ct);
+		return result.ToHttpResult(_ => Results.NoContent());
+	}
+
+	[Function("GetLiveProgress")]
+	[Authorize(Policy = JwtAuthExtensions.AdminPolicy)]
+	public async Task<IResult> GetLive(
+		[HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "activities/{id:guid}/live")] HttpRequest req,
+		Guid id,
+		CancellationToken ct)
+	{
+		var result = await sender.Send(new GetLiveProgressQuery(id), ct);
 		return result.ToHttpResult();
 	}
 }

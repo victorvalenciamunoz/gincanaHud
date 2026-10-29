@@ -24,8 +24,8 @@ Lee `docs/VISION.md` (el porqué y los requisitos), `docs/DOMAIN.md` (modelo), `
 
 - `GincanaHud.App`: MAUI, Android, **.NET 11 Preview** (D1). MVVM + XAML C# Expressions (D6). No está en la
   solución: se compila aparte.
-- `GincanaHud.Api`: Azure Functions .NET 10 isolated con integración ASP.NET Core (D20, D21; los endpoints del
-  panel aún no son funciones, paso 3b de la fase 12). Escalón 3 de `api.md` (dominio): D13, D14.
+- `GincanaHud.Api`: Azure Functions .NET 10 isolated con integración ASP.NET Core y JWT en un middleware (D20,
+  D21). Ninguna ruta puede empezar por `admin`. Escalón 3 de `api.md` (dominio): D13, D14.
 - `GincanaHud.Admin`: Blazor Server (D9), cliente HTTP de la Api. Login por cookie + JWT de la Api (D17).
 - `GincanaHud.Shared`: DTOs y geodesia. `GincanaHud.AppHost`: Aspire en local.
 - Postgres: en local, contenedor de Aspire; en la nube, Supabase Free (D18).

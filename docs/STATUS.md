@@ -30,9 +30,22 @@ Lo cerrado hasta la fase 11 está en `docs/historia.md`.
       404 con ProblemDetails como antes. La demo no trae POIs: se metió uno de prueba a mano en la BD local.
     - Emulador: la app se une a `DEMO01` y el HUD carga el POI. La captura no salta porque la brújula simulada no
       mueve el HUD.
-  - [ ] 3b: middleware JWT y endpoints del panel (login, organizaciones, admins, POIs, escrituras, directo). Hasta
-    entonces el panel no funciona en esta rama.
-  - [ ] Al acabar 3b: capturar y ver el ranking desde el móvil de verdad contra las Functions.
+  - [x] 3b (2026-10-29): todos los endpoints son funciones; ya no hay Minimal API. `JwtAuthorizationMiddleware`
+    aplica el `[Authorize(Policy = …)]` de cada función o clase con el esquema y las políticas de siempre (sin token
+    → 401, sin rol → 403). Funciones nuevas en `ActivitiesFunctions` (crear, editar, POIs de la actividad, directo),
+    `UsersFunctions` (lista, vaciar jugadores), `OrganizationsFunctions`, `PoisFunctions` y `AdminAuthFunctions`.
+    - Rutas del panel renombradas: `admin-auth/login` → `panel-auth/login` y `admin-users` → `panel-users`.
+      Functions reserva el prefijo `admin` y descartaba esas funciones sin avisar (D21).
+    - Arreglo: `Activity` y `Capture` guardan las fechas en UTC. El panel manda la hora local y Npgsql la
+      rechazaba: crear un evento daba 500 en local (en Azure no se notaba porque el servidor está en UTC).
+    - El panel enseña el motivo que manda la Api (por ejemplo, la contraseña corta), no solo el código de estado.
+    Validado en local:
+    - HTTP: SuperAdmin → 200 en todo; admin de empresa → 403 en organizaciones, admins y vaciar jugadores, y
+      200/201/204 al crear y editar actividades y POIs y en el directo; sin token o con token falso → 401; las rutas
+      del móvil siguen anónimas.
+    - El autor en el panel: login de SuperAdmin, crear admin de empresa (con el mensaje de contraseña corta) y, con
+      él, crear actividades y POIs.
+  - [ ] Capturar y ver el ranking desde el móvil de verdad contra las Functions.
 
 Para el paso 5: las tablas de Supabase se crearon sin migraciones. Hay que comprobar que su esquema coincide con
 `InitialCreate` y marcarla como aplicada antes del primer `database update`.
