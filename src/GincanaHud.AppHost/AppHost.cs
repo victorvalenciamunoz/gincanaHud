@@ -10,56 +10,30 @@ if (!string.Equals(Environment.GetEnvironmentVariable("GINCANA_USE_IDE_DEBUG"), 
 	Environment.SetEnvironmentVariable("DEBUG_SESSION_SERVER_CERTIFICATE", null);
 }
 
+// Solo en local. La nube es Static Web Apps + Supabase y la despliega el workflow Despliegue (D22).
 var builder = DistributedApplication.CreateBuilder(args);
 
-// Solo se usa en publish/deploy a Azure; el run local sigue con Docker + procesos.
-builder.AddAzureContainerAppEnvironment("aca-env");
+var db = builder.AddPostgres("postgres")
+	.WithHostPort(5432)
+	.WithDataVolume()
+	.AddDatabase("gincanahud");
 
-// Local: Postgres en Docker. Azure: connection string externa (Supabase).
-IResourceBuilder<IResourceWithConnectionString> db;
-if (builder.ExecutionContext.IsPublishMode)
-{
-	db = builder.AddConnectionString("gincanahud");
-}
-else
-{
-	db = builder.AddPostgres("postgres")
-		.WithHostPort(5432)
-		.WithDataVolume()
-		.AddDatabase("gincanahud");
-}
-
-// Dev: user-secrets AppHost Parameters:*. Azure demo: mismos Parameters en aspire deploy.
+// user-secrets del AppHost: Parameters:admin-username / Parameters:admin-password.
 var adminUsername = builder.AddParameter("admin-username");
 var adminPassword = builder.AddParameter("admin-password", secret: true);
 
-static void ScaleToZero(Azure.Provisioning.AppContainers.ContainerApp app)
-{
-	// Solo afecta al publish/deploy; el run local no usa este callback.
-	app.Template.Scale.MinReplicas = 0;
-}
-
 // Functions .NET 10 isolated (D20): en local con Core Tools (`func`) y Azurite para el almacenamiento del host.
+// La firma JWT usa el valor de desarrollo de la Api.
 var api = builder.AddAzureFunctionsProject<Projects.GincanaHud_Api>("api")
 	.WithReference(db)
 	.WithEnvironment("AdminBootstrap__Username", adminUsername)
 	.WithEnvironment("AdminBootstrap__Password", adminPassword)
-	.WithExternalHttpEndpoints();
-
-// Firma JWT: en Azure vía parámetro; en Development la Api tiene fallback local.
-if (builder.ExecutionContext.IsPublishMode)
-{
-	var jwtSigningKey = builder.AddParameter("jwt-signing-key", secret: true);
-	api.WithEnvironment("Jwt__SigningKey", jwtSigningKey);
-}
-
-if (!builder.ExecutionContext.IsPublishMode)
-	api.WaitFor(db);
+	.WithExternalHttpEndpoints()
+	.WaitFor(db);
 
 // Blazor WebAssembly: en local lo sirve su DevServer y llama a las Functions en :5263 (CORS en launchSettings de la Api).
 builder.AddProject<Projects.GincanaHud_Admin>("admin")
 	.WaitFor(api)
-	.WithExternalHttpEndpoints()
-	.PublishAsAzureContainerApp((_, app) => ScaleToZero(app));
+	.WithExternalHttpEndpoints();
 
 builder.Build().Run();
