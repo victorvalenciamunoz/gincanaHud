@@ -51,17 +51,7 @@ jobs:
           SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
         run: python3 .github/scripts/pg_env.py
 
-      - name: Tablas antes
-        run: psql -c '\dt public.*'
-
-      # Temporal (paso 5a): una sola vez, para empezar de cero.
-      - name: Borrar las tablas de la app
-        run: psql -v ON_ERROR_STOP=1 -f .github/sql/reset-app-tables.sql
-
       - name: Aplicar migraciones
-        run: psql -v ON_ERROR_STOP=1 -f migrate.sql
-
-      - name: Tablas después
         run: |
-          psql -c '\dt public.*'
-          psql -c 'select "MigrationId" from "__EFMigrationsHistory"'
+          psql -v ON_ERROR_STOP=1 -f migrate.sql
+          psql -c 'select "MigrationId" from "__EFMigrationsHistory" order by "MigrationId"'
