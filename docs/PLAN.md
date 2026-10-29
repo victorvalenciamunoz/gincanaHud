@@ -1,6 +1,6 @@
 # Plan
 
-**Fase actual: 12**
+**Fase actual: 13** (la 12 solo espera la factura de octubre de Azure)
 
 ---
 
@@ -44,3 +44,21 @@ Supabase Free + GitHub Actions).
 
 **Juez:** con la app desplegada y un evento de prueba completo (unirse, capturar, ranking) jugado desde el móvil
 contra la nube, la factura de Azure de ese mes es 0 €.
+
+## Fase 13 — Tests y CI
+
+No hay ningún test: cada cambio se valida a mano, y la fase 12 encontró fallos (fechas con hora local, rutas
+`admin`, cabeceras de Static Web Apps) que un test habría visto antes o que conviene no volver a romper. Se quiere
+poder cambiar el código sin miedo y que una PR en rojo no se pueda fusionar.
+
+- **Paso a — Dominio y CI.** Proyecto de tests (xUnit v3) con las reglas del dominio y la geodesia; workflow que
+  compila (avisos como errores) y pasa los tests en cada PR; `main` exige el CI en verde.
+  *Bueno cuando:* el CI está en verde en la PR, y un test roto a propósito lo pone en rojo y bloquea la fusión.
+- **Paso b — Handlers contra Postgres.** Tests de los casos de uso contra un Postgres real (Testcontainers):
+  unirse, capturar (lejos, cerca, orden secuencial, fuera de horario, pista solo tras capturar) y ranking.
+  *Bueno cuando:* corren en local y en el CI.
+- **Paso c — Cliente del panel.** Tests de `AdminApiClient`: cada respuesta de la Api llega como `ErrorOr` o como
+  excepción según `blazor.md`.
+  *Bueno cuando:* corren en el CI.
+
+**Juez:** el CI corre en cada PR con los tres grupos de tests, y `main` no acepta una PR en rojo.

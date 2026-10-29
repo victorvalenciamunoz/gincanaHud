@@ -1,11 +1,23 @@
 # Estado
 
-**Fase:** 12 — Infraestructura a 0 €
+**Fase:** 13 — Tests y CI (la 12 solo espera la factura de octubre)
 **Actualizado:** 2026-10-29
 
 Lo cerrado hasta la fase 11 está en `docs/historia.md`.
 
-## Fase 12 — en marcha
+## Fase 13 — en marcha
+
+- [x] Paso a — dominio y CI (2026-10-29): proyecto `tests/GincanaHud.Tests` (xUnit v3, Microsoft.Testing.Platform
+  activado en `global.json`) con 44 tests de `Activity` (ventana de juego, UTC, código de unión, participantes,
+  POIs), objetos de valor y `GeoMath`. Workflow `CI` (`ci.yml`): en cada PR y en `main`, build con avisos como
+  errores y tests. `main` protegida: exige «Build y tests» en verde, también al administrador (D23). Las acciones
+  de los tres workflows pasan a `checkout@v7` y `setup-dotnet@v6` (Node 24).
+  Validado: en local y en el CI, 0 avisos y 44 tests en verde; un test roto a propósito puso el CI en rojo y la PR
+  en `BLOCKED`; al deshacerlo, verde y `CLEAN`. Despliegue y keepalive en verde con las acciones nuevas.
+- [ ] Paso b — handlers contra Postgres (Testcontainers).
+- [ ] Paso c — cliente del panel.
+
+## Fase 12 — cerrada salvo la factura
 
 - [x] Paso 0 — documentación base (2026-10-28): `CLAUDE.md` sin `AGENTS.md` ni reglas de Cursor, `VISION.md`,
   `PLAN.md`, `historia.md`; D18 duplicada pasa a D19. Validado con `dotnet build` (no hay tests).
@@ -126,7 +138,7 @@ Lo cerrado hasta la fase 11 está en `docs/historia.md`.
 | Tema | Nota |
 |------|------|
 | Crash Android `jumpToEnd` | Bug de IDs tras Fast Deployment (.NET 11). `EmbedAssembliesIntoApk=true`. Si vuelve: desinstalar la app y redesplegar. |
-| Sin tests ni CI de build | No hay proyecto de tests. Workflows: keepalive diario y `Despliegue` (a mano). |
+| Tests | Solo dominio y geodesia (fase 13 en marcha). Workflows: `CI`, keepalive diario y `Despliegue` (a mano). |
 | Toolchain MAUI | El SDK 11 preview 6 de `global.json` ya no está instalado; `rollForward` coge el 11 RC3. Workload `maui-android` RC2 instalado el 2026-10-29: la app compila con los paquetes de MAUI preview 6. |
 | Functions en local | Hace falta Azure Functions Core Tools (`winget install Microsoft.Azure.FunctionsCoreTools`, 4.15.2) en el PATH del proceso que lanza el AppHost. |
 

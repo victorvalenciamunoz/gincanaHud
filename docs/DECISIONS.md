@@ -371,3 +371,29 @@ tablas de Supabase se habían creado sin migraciones y sus datos eran de prueba 
 - Funciones propias enlazadas («bring your own functions»): exigen el plan Standard, que es de pago.
 - Conservar las tablas y marcar `InitialCreate` como aplicada: había que comparar el esquema columna a columna para
   conservar datos de prueba.
+
+## D23 — Tests y CI
+
+**Contexto:** fase 13. No había tests. El autor eligió (2026-10-29) una fase propia en tres pasos, Postgres real
+para los tests de base de datos y que `main` exija el CI en verde.
+
+**Decisión**
+
+- Un proyecto, `tests/GincanaHud.Tests`, en la solución. xUnit v3 4.0.2, `xunit.runner.visualstudio` 4.0.1 y
+  `Microsoft.NET.Test.Sdk` 18.11.0 (Apache 2.0 / MIT, versiones de octubre de 2026). Comprobaciones con los
+  `Assert` de xUnit: FluentAssertions es de pago desde la versión 8.
+- `global.json` activa Microsoft.Testing.Platform (`"test": { "runner": … }`, elegido por el autor): con el SDK de
+  .NET 10, `dotnet test` ya no ejecuta xUnit v3 con VSTest. La versión del SDK no cambia.
+- Workflow `CI` en cada PR y en `main`: `dotnet build -warnaserror` y `dotnet test`. La app MAUI no está en la
+  solución y no entra. `main` exige el check «Build y tests» en verde para fusionar, también al administrador
+  (`enforce_admins`), sin revisiones obligatorias (hay un solo desarrollador).
+- Acciones en Node 24 (`actions/checkout@v7`, `actions/setup-dotnet@v6`): las v4 usan Node 20, obsoleto en los
+  runners de GitHub.
+- Los tests de base de datos (paso b) usarán `Testcontainers.PostgreSql`: el fallo de fechas de la fase 12 solo
+  aparecía con Postgres de verdad.
+- En los tests, coordenadas neutras alrededor de (0, 0): el repo es público.
+
+**Alternativas descartadas**
+
+- `xunit.v3.mtp-off` para seguir con VSTest sin tocar `global.json`: el camino que Microsoft va dejando.
+- EF InMemory para los handlers: no habría detectado el fallo de las fechas con hora local.

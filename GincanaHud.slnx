@@ -6,4 +6,7 @@
     <Project Path="src/GincanaHud.ServiceDefaults/GincanaHud.ServiceDefaults.csproj" />
     <Project Path="src/GincanaHud.Shared/GincanaHud.Shared.csproj" />
   </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/GincanaHud.Tests/GincanaHud.Tests.csproj" />
+  </Folder>
 </Solution>
