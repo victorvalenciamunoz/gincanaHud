@@ -1,7 +1,5 @@
 @page "/activities/{Id:guid}"
-@rendermode InteractiveServer
 @inject AdminApiClient Api
-@inject IHttpContextAccessor Http
 @inject NavigationManager Nav
 
 <PageTitle>Actividad</PageTitle>
@@ -155,6 +153,8 @@ else if (_detail is not null)
 }
 
 @code {
+    [CascadingParameter] Task<AuthenticationState> AuthState { get; set; } = default!;
+
     [Parameter] public Guid Id { get; set; }
 
     ActivityDetailDto? _detail;
@@ -200,7 +200,7 @@ else if (_detail is not null)
                 return;
             }
 
-            var user = Http.HttpContext?.User;
+            var user = (await AuthState).User;
             if (user is not null && !AdminPrincipal.IsSuperAdmin(user))
             {
                 var orgClaim = user.FindFirst(AdminClaimTypes.OrganizationId)?.Value;

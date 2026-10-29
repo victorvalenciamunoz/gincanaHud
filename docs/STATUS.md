@@ -62,7 +62,19 @@ Lo cerrado hasta la fase 11 está en `docs/historia.md`.
     - HTTP: sin token → 401; primera búsqueda ~300 ms y la misma otra vez de caché en 25 ms; dos búsquedas nuevas
       seguidas tardan más de 1 s; nombres con ñ y tilde bien; búsqueda vacía → lista vacía.
     - El autor en el panel: buscar un lugar con un resultado y con varios, y el mapa va al sitio.
-  - [ ] 4b: panel en Blazor WebAssembly con login por token y sin `HttpContext`.
+  - [x] 4b (2026-10-29): `GincanaHud.Admin` es Blazor WebAssembly standalone (D21). `AdminSession` guarda en
+    `localStorage` la respuesta del login (JWT, rol, organización, caducidad) y hace de `AuthenticationStateProvider`;
+    `AdminApiAuthHandler` manda el token y cierra la sesión si la Api contesta 401. Las páginas leen el usuario del
+    estado de autenticación en vez de `HttpContext`; `[Authorize]` en `_Imports.razor` sustituye a la
+    `FallbackPolicy`. Fuera: login por formulario al servidor, cookie, página de error de servidor y aviso de
+    reconexión, y la referencia a ServiceDefaults. En local llama a las Functions en `:5263`, con CORS solo para el
+    origen del panel (`--cors` en `launchSettings.json` de la Api).
+    Validado en local:
+    - Edge sin ventana: `/activities` sin sesión acaba en el login pintado por Blazor; CORS deja pasar al panel y
+      no a otro origen.
+    - El autor en el panel: login con los dos roles (y fallido), crear actividad, colocar POIs (también buscando un
+      lugar), QR, directo, sesión que sobrevive a cerrar la pestaña, «Salir» y vuelta a la página pedida tras el
+      login.
   - [ ] 4c: cliente HTTP del panel con `ErrorOr`.
 
 Para el paso 5: las tablas de Supabase se crearon sin migraciones. Hay que comprobar que su esquema coincide con

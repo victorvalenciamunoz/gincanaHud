@@ -3,7 +3,7 @@
   "profiles": {
     "GincanaHud.Api": {
       "commandName": "Project",
-      "commandLineArgs": "--port 5263",
+      "commandLineArgs": "--port 5263 --cors https://localhost:7014,http://localhost:5004",
       "launchBrowser": false,
       "environmentVariables": {
         "AZURE_FUNCTIONS_ENVIRONMENT": "Development"

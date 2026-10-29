@@ -1,7 +1,5 @@
 ﻿@page "/"
-@rendermode InteractiveServer
 @inject AdminApiClient Api
-@inject IHttpContextAccessor Http
 
 <PageTitle>Admin</PageTitle>
 
@@ -40,6 +38,8 @@ else
 }
 
 @code {
+    [CascadingParameter] Task<AuthenticationState> AuthState { get; set; } = default!;
+
     int _players;
     int _activities;
     int _pois;
@@ -50,7 +50,7 @@ else
     {
         try
         {
-            var user = Http.HttpContext?.User;
+            var user = (await AuthState).User;
             var isSuper = AdminPrincipal.IsSuperAdmin(user);
             Guid? orgId = null;
             if (!isSuper)

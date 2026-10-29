@@ -1,9 +1,7 @@
 @page "/live"
 @page "/live/{ActivityId:guid}"
-@rendermode InteractiveServer
 @implements IAsyncDisposable
 @inject AdminApiClient Api
-@inject IHttpContextAccessor Http
 @inject NavigationManager Nav
 
 <PageTitle>En vivo</PageTitle>
@@ -196,6 +194,8 @@
 </div>
 
 @code {
+    [CascadingParameter] Task<AuthenticationState> AuthState { get; set; } = default!;
+
     [Parameter] public Guid? ActivityId { get; set; }
 
     sealed record PodiumView(int Place, string Name, string Time, string? Contact, bool JustFinished);
@@ -232,7 +232,7 @@
         try
         {
             Guid? orgId = null;
-            var user = Http.HttpContext?.User;
+            var user = (await AuthState).User;
             if (!AdminPrincipal.IsSuperAdmin(user))
             {
                 var orgClaim = user?.FindFirst(AdminClaimTypes.OrganizationId)?.Value;

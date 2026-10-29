@@ -1,8 +1,6 @@
 @page "/users"
 @attribute [Authorize]
-@rendermode InteractiveServer
 @inject AdminApiClient Api
-@inject IHttpContextAccessor Http
 
 <PageTitle>Jugadores</PageTitle>
 <p class="page-kicker">Participantes</p>
@@ -78,6 +76,8 @@ else
 }
 
 @code {
+    [CascadingParameter] Task<AuthenticationState> AuthState { get; set; } = default!;
+
     List<PlayerDto>? _players;
     string _name = "";
     string? _message;
@@ -88,7 +88,7 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        var user = Http.HttpContext?.User;
+        var user = (await AuthState).User;
         _isSuper = AdminPrincipal.IsSuperAdmin(user);
         if (!_isSuper)
         {

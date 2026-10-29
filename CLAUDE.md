@@ -26,7 +26,8 @@ Lee `docs/VISION.md` (el porqué y los requisitos), `docs/DOMAIN.md` (modelo), `
   solución: se compila aparte.
 - `GincanaHud.Api`: Azure Functions .NET 10 isolated con integración ASP.NET Core y JWT en un middleware (D20,
   D21). Ninguna ruta puede empezar por `admin`. Escalón 3 de `api.md` (dominio): D13, D14.
-- `GincanaHud.Admin`: Blazor Server (D9), cliente HTTP de la Api. Login por cookie + JWT de la Api (D17).
+- `GincanaHud.Admin`: Blazor WebAssembly (D20, D21), cliente HTTP de la Api. Login con el JWT de la Api guardado en
+  `localStorage` (12 h).
 - `GincanaHud.Shared`: DTOs y geodesia. `GincanaHud.AppHost`: Aspire en local.
 - Postgres: en local, contenedor de Aspire; en la nube, Supabase Free (D18).
 

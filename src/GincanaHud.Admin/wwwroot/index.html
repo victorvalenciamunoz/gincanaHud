@@ -1,32 +1,32 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="es">
 
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>GincanaHud Admin</title>
     <base href="/" />
-    <ResourcePreloader />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;700&amp;family=IBM+Plex+Sans:wght@400;600;700&amp;display=swap" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
           integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
           crossorigin="" />
-    <link rel="stylesheet" href="@Assets["app.css"]" />
-    <link rel="stylesheet" href="@Assets["live.css"]" />
-    <link rel="stylesheet" href="@Assets["GincanaHud.Admin.styles.css"]" />
-    <ImportMap />
-    <HeadOutlet />
+    <link rel="stylesheet" href="app.css" />
+    <link rel="stylesheet" href="live.css" />
+    <link rel="stylesheet" href="GincanaHud.Admin.styles.css" />
 </head>
 
 <body>
-    <Routes />
-    <ReconnectModal />
+    <div id="app">
+        <p class="loading">Cargando…</p>
+    </div>
+
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
             integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
             crossorigin=""></script>
-    <script src="@Assets["js/poi-map.js"]"></script>
-    <script src="@Assets["_framework/blazor.web.js"]"></script>
+    <script src="js/poi-map.js"></script>
+    <script src="_framework/blazor.webassembly.js"></script>
     <script>
         document.addEventListener('click', function (e) {
             var link = e.target && e.target.closest && e.target.closest('.admin-nav a');

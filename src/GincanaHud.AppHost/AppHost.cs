@@ -56,8 +56,8 @@ if (builder.ExecutionContext.IsPublishMode)
 if (!builder.ExecutionContext.IsPublishMode)
 	api.WaitFor(db);
 
+// Blazor WebAssembly: en local lo sirve su DevServer y llama a las Functions en :5263 (CORS en launchSettings de la Api).
 builder.AddProject<Projects.GincanaHud_Admin>("admin")
-	.WithReference(api)
 	.WaitFor(api)
 	.WithExternalHttpEndpoints()
 	.PublishAsAzureContainerApp((_, app) => ScaleToZero(app));
