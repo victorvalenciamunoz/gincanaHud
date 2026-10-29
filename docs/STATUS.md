@@ -116,7 +116,10 @@ Lo cerrado hasta la fase 11 está en `docs/historia.md`.
   - [ ] Juez, parte de la factura: la de octubre de 2026 en Azure tiene que ser 0 €. El 2026-10-29 Azure aún no
     mostraba consumo (llega con uno o dos días de retraso). Mirar a principios de noviembre.
 - El keepalive diario pasa en verde (último: 2026-10-29) con los tres secretos configurados.
-- En Supabase quedan usuarios de prueba creados con curl («Prueba nube», «Prueba nube 2», «Prueba chunked»).
+- En Supabase quedan usuarios de prueba creados con curl («Prueba nube», «Prueba nube 2», «Prueba chunked»,
+  «Prueba Aspire 13.6»).
+- Aspire 13.6.4 (2026-10-29): sin paquetes vulnerables (MessagePack 2.5.307); `ASPIRE010` silenciado en el AppHost.
+  Probado en local (arranque, salud, unirse a `DEMO01`, panel) y en la nube (despliegue, salud, unirse).
 
 ## Problemas conocidos
 
@@ -124,7 +127,6 @@ Lo cerrado hasta la fase 11 está en `docs/historia.md`.
 |------|------|
 | Crash Android `jumpToEnd` | Bug de IDs tras Fast Deployment (.NET 11). `EmbedAssembliesIntoApk=true`. Si vuelve: desinstalar la app y redesplegar. |
 | Sin tests ni CI de build | No hay proyecto de tests. Workflows: keepalive diario y `Despliegue` (a mano). |
-| Paquetes vulnerables | El build avisa: `MessagePack` 2.5.302 (moderada, viene con Aspire en el AppHost). |
 | Toolchain MAUI | El SDK 11 preview 6 de `global.json` ya no está instalado; `rollForward` coge el 11 RC3. Workload `maui-android` RC2 instalado el 2026-10-29: la app compila con los paquetes de MAUI preview 6. |
 | Functions en local | Hace falta Azure Functions Core Tools (`winget install Microsoft.Azure.FunctionsCoreTools`, 4.15.2) en el PATH del proceso que lanza el AppHost. |
 
