@@ -69,7 +69,7 @@ public class ActivityTests
 	{
 		var activity = Activity.Create(Guid.NewGuid(), "Gincana", "", Starts, Ends, joinCode: " ab-c1 2 ").Value;
 
-		Assert.Equal("ROTO-A-PROPOSITO", activity.JoinCode);
+		Assert.Equal("ABC12", activity.JoinCode);
 	}
 
 	[Theory]
