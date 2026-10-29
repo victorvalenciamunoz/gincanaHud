@@ -3,6 +3,9 @@
     "rewrite": "/index.html",
     "exclude": [ "/_framework/*", "/js/*", "*.{css,js,json,wasm,dat,ico,png,svg,webmanifest}" ]
   },
+  "globalHeaders": {
+    "Referrer-Policy": "strict-origin-when-cross-origin"
+  },
   "platform": {
     "apiRuntime": "dotnet-isolated:10.0"
   }
