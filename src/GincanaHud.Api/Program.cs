@@ -33,6 +33,8 @@ nominatim.RemoveAllResilienceHandlers();
 #pragma warning restore EXTEXP0001
 builder.Services.ConfigureHttpJsonOptions(o =>
 	o.SerializerOptions.Converters.Add(new JsonStringEnumConverter()));
+var startupHealth = new StartupHealthCheck();
+builder.Services.AddHealthChecks().AddCheck("startup", startupHealth);
 
 var app = builder.Build();
 
@@ -42,7 +44,17 @@ using (var scope = app.Services.CreateScope())
 	var hasher = scope.ServiceProvider.GetRequiredService<IPasswordHasher<AdminUser>>();
 	var bootstrap = scope.ServiceProvider.GetRequiredService<Microsoft.Extensions.Options.IOptions<AdminBootstrapOptions>>();
 	var environment = scope.ServiceProvider.GetRequiredService<IHostEnvironment>();
-	await DbSeeder.SeedAsync(db, hasher, bootstrap, environment);
+	try
+	{
+		await DbSeeder.SeedAsync(db, hasher, bootstrap, environment);
+	}
+	catch (Exception ex) when (!environment.IsDevelopment())
+	{
+		// In the cloud a database hiccup at cold start must not take every function down; /api/health reports it.
+		startupHealth.Fail(ex);
+		scope.ServiceProvider.GetRequiredService<ILoggerFactory>().CreateLogger("GincanaHud.Api.Startup")
+			.LogError(ex, "Seeding failed at startup");
+	}
 }
 
 app.Run();
