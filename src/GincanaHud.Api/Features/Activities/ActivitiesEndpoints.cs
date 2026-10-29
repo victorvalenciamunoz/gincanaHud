@@ -2,15 +2,8 @@ using GincanaHud.Api;
 using GincanaHud.Api.Common.Http;
 using GincanaHud.Api.Common.Messaging;
 using GincanaHud.Api.Features.Activities.AddActivityPoi;
-using GincanaHud.Api.Features.Activities.CapturePoi;
 using GincanaHud.Api.Features.Activities.CreateActivity;
-using GincanaHud.Api.Features.Activities.GetActivity;
-using GincanaHud.Api.Features.Activities.GetActivityByCode;
 using GincanaHud.Api.Features.Activities.GetLiveProgress;
-using GincanaHud.Api.Features.Activities.GetRanking;
-using GincanaHud.Api.Features.Activities.JoinActivity;
-using GincanaHud.Api.Features.Activities.ListActivities;
-using GincanaHud.Api.Features.Activities.RegisterParticipant;
 using GincanaHud.Api.Features.Activities.RemoveActivityPoi;
 using GincanaHud.Api.Features.Activities.UpdateActivity;
 using GincanaHud.Api.Features.Activities.UpdateActivityPoi;
@@ -23,49 +16,6 @@ public static class ActivitiesEndpoints
 	public static RouteGroupBuilder MapActivitiesEndpoints(this IEndpointRouteBuilder app)
 	{
 		var group = app.MapGroup("/api/activities");
-
-		// Mobile + Admin reads
-		group.MapGet("/", async (bool? includeInactive, ISender sender, CancellationToken ct) =>
-		{
-			var result = await sender.Send(new ListActivitiesQuery(includeInactive == true), ct);
-			return result.ToHttpResult();
-		}).AllowAnonymous();
-
-		group.MapPost("/join", async (JoinActivityRequest body, ISender sender, CancellationToken ct) =>
-		{
-			var result = await sender.Send(new JoinActivityCommand(body), ct);
-			return result.ToHttpResult();
-		}).AllowAnonymous();
-
-		group.MapGet("/by-code/{code}", async (string code, ISender sender, CancellationToken ct) =>
-		{
-			var result = await sender.Send(new GetActivityByCodeQuery(code), ct);
-			return result.ToHttpResult();
-		}).AllowAnonymous();
-
-		group.MapGet("/{id:guid}", async (Guid id, Guid? userId, ISender sender, CancellationToken ct) =>
-		{
-			var result = await sender.Send(new GetActivityQuery(id, userId), ct);
-			return result.ToHttpResult();
-		}).AllowAnonymous();
-
-		group.MapPost("/{id:guid}/participants", async (Guid id, RegisterParticipantRequest body, ISender sender, CancellationToken ct) =>
-		{
-			var result = await sender.Send(new RegisterParticipantCommand(id, body.UserId), ct);
-			return result.ToHttpResult(_ => Results.NoContent());
-		}).AllowAnonymous();
-
-		group.MapPost("/{id:guid}/capture", async (Guid id, CaptureRequest body, ISender sender, CancellationToken ct) =>
-		{
-			var result = await sender.Send(new CapturePoiCommand(id, body), ct);
-			return result.ToHttpResult();
-		}).AllowAnonymous();
-
-		group.MapGet("/{id:guid}/ranking", async (Guid id, ISender sender, CancellationToken ct) =>
-		{
-			var result = await sender.Send(new GetRankingQuery(id), ct);
-			return result.ToHttpResult();
-		}).AllowAnonymous();
 
 		// Admin writes / live board
 		group.MapPost("/", async (CreateActivityRequest body, ISender sender, CancellationToken ct) =>

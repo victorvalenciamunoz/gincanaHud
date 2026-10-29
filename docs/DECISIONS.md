@@ -267,3 +267,34 @@ documentación oficial.
   durante 4 horas se acerca al límite y, si se agota, la web se para hasta el día siguiente. Además, 5 conexiones
   de Blazor Server como mucho y sin dominio propio.
 - Panel en Static Web Apps + Api en App Service F1: mismo riesgo de CPU y dos despliegues.
+
+## D21 — Cómo pasa la Api a Functions
+
+**Contexto:** paso 3 de la fase 12 (D20). Los endpoints Minimal API pasan a funciones HTTP sin tocar dominio,
+handlers ni mediador. Paquetes comprobados en nuget.org el 2026-10-29 (todos MIT y con versiones de 2026).
+
+**Decisión**
+
+- `GincanaHud.Api` usa `Microsoft.NET.Sdk` + `Microsoft.Azure.Functions.Worker` 2.52.0, `.Worker.Sdk` 2.1.0 y
+  `.Worker.Extensions.Http.AspNetCore` 2.1.1 (integración ASP.NET Core: las funciones reciben `HttpRequest` y
+  devuelven el mismo `IResult` que antes, así que `ToHttpResult` y los ProblemDetails no cambian). Los `using` que
+  ponía el SDK web se añaden en el csproj.
+- Una clase de funciones por feature (`ActivitiesFunctions`, `UsersFunctions`…) con el `ISender` por constructor.
+  Las rutas no llevan `/api`: lo pone Functions, así que las URL no cambian.
+- El cuerpo se lee con `ReadFromJsonAsync` (`WithJsonBodyAsync`), que usa las mismas opciones JSON de siempre (enums
+  como texto). Cuerpo vacío o roto → 400, como Minimal API. No se usa el `[FromBody]` del worker para no tener dos
+  configuraciones de JSON.
+- `/api/health` existe en todos los entornos (en la nube el móvil lo usa). Solo comprueba que el proceso responde,
+  no expone nada. La app da la Api por viva solo con un 2xx: antes valía cualquier respuesta < 500 porque `/health`
+  solo existía en desarrollo.
+- En local, Aspire lanza las Functions con `AddAzureFunctionsProject` (`Aspire.Hosting.Azure.Functions` 13.4.6, la
+  versión del resto de Aspire), que añade Azurite como almacenamiento del host. El puerto 5263 sale de
+  `launchSettings.json` (`--port 5263`). Se quita `PublishAsAzureContainerApp` de la Api: el despliegue de D18 se
+  retira en el paso 5.
+- Se quita OpenAPI: sin `WebApplication` no hay `MapOpenApi`, y no lo usaba nadie.
+
+**Alternativas descartadas**
+
+- Lanzar `func start` con `AddExecutable`: sin paquete ni Azurite, pero con el puerto y las conexiones cableados a
+  mano (elegido por el autor).
+- Un proyecto de Functions nuevo al lado de la Api: dos proyectos para lo mismo; D20 ya decía convertir el actual.

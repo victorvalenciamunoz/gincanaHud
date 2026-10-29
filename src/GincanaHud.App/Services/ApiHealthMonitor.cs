@@ -21,7 +21,7 @@ public interface IApiHealthMonitor
 	Task ProbeAsync(CancellationToken ct = default);
 }
 
-/// <summary>Comprueba red del dispositivo + respuesta HTTP de la API (/health o base).</summary>
+/// <summary>Comprueba red del dispositivo + respuesta HTTP de la API (/api/health).</summary>
 public sealed class ApiHealthMonitor : IApiHealthMonitor, IDisposable
 {
 	private readonly HttpClient _http;
@@ -96,17 +96,11 @@ public sealed class ApiHealthMonitor : IApiHealthMonitor, IDisposable
 
 			try
 			{
-				using var response = await _http.GetAsync("health", timeout.Token).ConfigureAwait(false);
+				// Under /api: in Static Web Apps, /health is answered by the static site (D20).
+				using var response = await _http.GetAsync("api/health", timeout.Token).ConfigureAwait(false);
 				if (response.IsSuccessStatusCode)
 				{
 					SetState(ApiLinkState.Online, "API OK", "La API responde correctamente.");
-					return;
-				}
-
-				// /health solo en Development: cualquier respuesta < 500 implica host vivo.
-				if ((int)response.StatusCode < 500)
-				{
-					SetState(ApiLinkState.Online, "API OK", $"API alcanzable ({(int)response.StatusCode}).");
 					return;
 				}
 

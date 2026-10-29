@@ -39,12 +39,12 @@ static void ScaleToZero(Azure.Provisioning.AppContainers.ContainerApp app)
 	app.Template.Scale.MinReplicas = 0;
 }
 
-var api = builder.AddProject<Projects.GincanaHud_Api>("api")
+// Functions .NET 10 isolated (D20): en local con Core Tools (`func`) y Azurite para el almacenamiento del host.
+var api = builder.AddAzureFunctionsProject<Projects.GincanaHud_Api>("api")
 	.WithReference(db)
 	.WithEnvironment("AdminBootstrap__Username", adminUsername)
 	.WithEnvironment("AdminBootstrap__Password", adminPassword)
-	.WithExternalHttpEndpoints()
-	.PublishAsAzureContainerApp((_, app) => ScaleToZero(app));
+	.WithExternalHttpEndpoints();
 
 // Firma JWT: en Azure vía parámetro; en Development la Api tiene fallback local.
 if (builder.ExecutionContext.IsPublishMode)
