@@ -80,13 +80,19 @@ Lo cerrado hasta la fase 11 está en `docs/historia.md`.
     llamadas de las páginas enseñan `FirstError.Description`.
     Validado en local por el autor: contraseña corta, usuario repetido, actividad inexistente («Actividad no
     encontrada.»), login fallido y un repaso de actividades, POIs, búsqueda y directo.
-- [ ] Paso 5 — Despliegue (antes, propuesta de cómo partirlo).
-
-Para el paso 5: las tablas de Supabase se crearon sin migraciones. Hay que comprobar que su esquema coincide con
-`InitialCreate` y marcarla como aplicada antes del primer `database update`.
+- [ ] Paso 5 — Despliegue, partido en 5a (migraciones en Supabase), 5b (Static Web Apps Free) y 5c (móvil contra
+  la nube, juez y retirar Container Apps).
+  - [x] 5a (2026-10-29): workflow `Despliegue` (`deploy.yml`, lanzado a mano), trabajo «Migraciones en Supabase»:
+    genera el script idempotente de EF y lo aplica con `psql`. La conexión sale de `SUPABASE_DB_URL` (el secreto del
+    keepalive) con `.github/scripts/pg_env.py`, que oculta usuario y contraseña en el log (D22).
+    - Supabase empezó de cero: las tablas de la app (creadas sin migraciones, datos de prueba) se borraron una vez
+      y las creó `InitialCreate`. `keepalive_ping` no se tocó. El borrado no queda en el workflow.
+    Validado: primera ejecución (desde la rama) con las 8 tablas recreadas y `InitialCreate` en el historial;
+    segunda ejecución sin cambios; keepalive en verde después.
+  - [ ] 5b: Static Web Apps Free con panel y Functions; login y crear actividad en la nube.
+  - [ ] 5c: app MAUI a la URL nueva, partida de prueba desde el móvil (juez) y retirar Container Apps.
 - Nada desplegado en Azure: el grupo de recursos de la demo (`rg-gincanahud-demo`) está borrado.
-- Los datos siguen en Supabase. El keepalive diario pasa en verde (último: 2026-10-28) con los tres secretos
-  configurados.
+- El keepalive diario pasa en verde (último: 2026-10-29) con los tres secretos configurados.
 
 ## Problemas conocidos
 

@@ -7,9 +7,6 @@ name: Despliegue
 
 on:
   workflow_dispatch:
-  # Temporal (paso 5a): primera ejecución desde la rama, antes de que el workflow esté en main.
-  push:
-    branches: [fase12/5a-supabase-migraciones]
 
 permissions:
   contents: read

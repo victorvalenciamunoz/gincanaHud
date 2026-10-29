@@ -327,3 +327,25 @@ handlers ni mediador. Paquetes comprobados en nuget.org el 2026-10-29 (todos MIT
 - Lanzar `func start` con `AddExecutable`: sin paquete ni Azurite, pero con el puerto y las conexiones cableados a
   mano (elegido por el autor).
 - Un proyecto de Functions nuevo al lado de la Api: dos proyectos para lo mismo; D20 ya decía convertir el actual.
+
+## D22 — Despliegue con una GitHub Action
+
+**Contexto:** paso 5 de la fase 12 (D20). Las migraciones las aplica el despliegue, no la Api al arrancar. Las
+tablas de Supabase se habían creado sin migraciones y sus datos eran de prueba (2026-10-29).
+
+**Decisión**
+
+- Un workflow, `Despliegue` (`.github/workflows/deploy.yml`), lanzado a mano (`workflow_dispatch`).
+- Migraciones: EF genera un script idempotente (`migrations script --idempotent`, sin conectarse) y `psql` lo
+  aplica en una transacción por migración. Volver a lanzarlo no cambia nada.
+- La conexión es el secreto `SUPABASE_DB_URL` del keepalive (session pooler), en URI o en formato Npgsql.
+  `.github/scripts/pg_env.py` reutiliza el parser del keepalive y oculta usuario y contraseña en los logs, que en
+  un repo público son públicos.
+- Supabase empezó de cero (elegido por el autor): se borraron una vez las tablas de la app y se crearon con
+  `InitialCreate`. `keepalive_ping` es del keepalive y no la toca nadie más.
+
+**Alternativas descartadas**
+
+- `dotnet ef database update` en la Action: necesita la cadena en formato Npgsql y el secreto puede ser una URI.
+- Conservar las tablas y marcar `InitialCreate` como aplicada: había que comparar el esquema columna a columna para
+  conservar datos de prueba.
