@@ -51,7 +51,19 @@ Lo cerrado hasta la fase 11 está en `docs/historia.md`.
   - [x] Móvil de verdad (2026-10-29): por USB con `adb reverse tcp:5263 tcp:5263` y la app apuntando a
     `http://127.0.0.1:5263/` solo para la prueba. El autor colocó un POI de `DEMO01` cerca desde el panel, se unió
     desde la app, capturó (100 puntos en la BD) y sale en el ranking de las Functions.
-- [ ] Paso 4 — Panel → WebAssembly (antes, propuesta de cómo partirlo).
+- [ ] Paso 4 — Panel → WebAssembly, partido en 4a (búsqueda de lugares en la Api), 4b (WebAssembly con token en
+  `localStorage`) y 4c (cliente HTTP con `ErrorOr`).
+  - [x] 4a (2026-10-29): `GET /api/places?q=` (`PlacesFunctions`, solo admins) busca en Nominatim a través de
+    `NominatimClient`: User-Agent con la URL del repo, una petición por segundo como mucho, sin reintentos
+    automáticos y resultados en caché un día (D21). El panel ya no llama a Nominatim.
+    - Arreglo previo: el mapa del panel reencuadraba los POIs en cada repintado y deshacía el salto al lugar
+      buscado. Ahora solo reencuadra cuando cambia la lista de POIs.
+    Validado en local:
+    - HTTP: sin token → 401; primera búsqueda ~300 ms y la misma otra vez de caché en 25 ms; dos búsquedas nuevas
+      seguidas tardan más de 1 s; nombres con ñ y tilde bien; búsqueda vacía → lista vacía.
+    - El autor en el panel: buscar un lugar con un resultado y con varios, y el mapa va al sitio.
+  - [ ] 4b: panel en Blazor WebAssembly con login por token y sin `HttpContext`.
+  - [ ] 4c: cliente HTTP del panel con `ErrorOr`.
 
 Para el paso 5: las tablas de Supabase se crearon sin migraciones. Hay que comprobar que su esquema coincide con
 `InitialCreate` y marcarla como aplicada antes del primer `database update`.

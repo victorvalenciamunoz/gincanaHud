@@ -203,3 +203,5 @@ public sealed record LivePlayerProgressDto(
 	int? FinishPlace,
 	string Status,
 	DateTimeOffset JoinedAt);
+
+public sealed record GeocodeHitDto(string DisplayName, double Latitude, double Longitude);

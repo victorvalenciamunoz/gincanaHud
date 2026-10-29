@@ -42,12 +42,6 @@ builder.Services.AddHttpClient<AdminApiClient>(client =>
 	client.BaseAddress = new Uri("https+http://api");
 }).AddHttpMessageHandler<AdminApiAuthHandler>();
 
-builder.Services.AddHttpClient<GeocodeService>(client =>
-{
-	client.BaseAddress = new Uri("https://nominatim.openstreetmap.org/");
-	client.DefaultRequestHeaders.UserAgent.ParseAdd("GincanaHud.Admin/0.1 (side-project; contact=local)");
-});
-
 var app = builder.Build();
 
 app.MapDefaultEndpoints();

@@ -298,6 +298,11 @@ handlers ni mediador. Paquetes comprobados en nuget.org el 2026-10-29 (todos MIT
   Se usa el `[Authorize]` estándar en vez de un atributo propio para no tener otro tipo.
 - Ninguna ruta empieza por `admin`: el host de Functions reserva ese prefijo y descarta la función sin error.
   `admin-auth/login` pasa a `panel-auth/login` y `admin-users` a `panel-users`; solo las usa el panel.
+- Búsqueda de lugares (paso 4a): función `GET /api/places?q=`, solo para admins. `NominatimClient` cumple la
+  política de Nominatim con un User-Agent que lleva la URL del repo (no un correo), una petición por segundo como
+  mucho (en cada instancia) y caché en memoria de un día. Se le quitan los reintentos automáticos de ServiceDefaults
+  con `RemoveAllResilienceHandlers` (API experimental, `EXTEXP0001` desactivado solo en esa línea): los reintentos
+  se saltarían el límite. Si Nominatim falla, la Api contesta un error con mensaje y el panel lo enseña.
 - Pendiente para el paso 4: el cliente HTTP del panel nuevo devuelve los fallos de negocio de la Api (4xx con
   ProblemDetails) como `ErrorOr` (regla de `blazor.md`). El de Blazor Server sigue lanzando excepciones, ahora con el
   motivo de la Api como mensaje: pasarlo a `ErrorOr` cambiaría 9 métodos y todas las páginas sin cambiar lo que se ve.

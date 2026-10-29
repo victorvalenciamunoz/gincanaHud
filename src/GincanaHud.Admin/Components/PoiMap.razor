@@ -16,6 +16,7 @@
     private readonly string _mapId = $"poi-map-{Guid.NewGuid():N}";
     private DotNetObjectReference<PoiMap>? _dotNetRef;
     private bool _ready;
+    private IReadOnlyList<MapPoiMarker>? _shownPois;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -27,9 +28,10 @@
         await RefreshPoisAsync();
     }
 
+    // Only when the page hands over a new POI list: refitting on every re-render undid FlyToAsync.
     protected override async Task OnParametersSetAsync()
     {
-        if (_ready)
+        if (_ready && !ReferenceEquals(Pois, _shownPois))
             await RefreshPoisAsync();
     }
 
@@ -49,6 +51,7 @@
     private async Task RefreshPoisAsync()
     {
         if (!_ready) return;
+        _shownPois = Pois;
         var payload = (Pois ?? []).Select(p => new
         {
             lat = p.Latitude,
