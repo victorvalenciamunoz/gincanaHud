@@ -1,7 +1,5 @@
 @page "/pois"
-@rendermode InteractiveServer
 @inject AdminApiClient Api
-@inject IHttpContextAccessor Http
 
 <PageTitle>POIs</PageTitle>
 <p class="page-kicker">Mapa</p>
@@ -56,6 +54,8 @@ else
 }
 
 @code {
+    [CascadingParameter] Task<AuthenticationState> AuthState { get; set; } = default!;
+
     List<PoiDto>? _pois;
     Dictionary<Guid, string> _orgNames = new();
     string? _error;
@@ -67,7 +67,7 @@ else
     {
         try
         {
-            var user = Http.HttpContext?.User;
+            var user = (await AuthState).User;
             _isSuper = AdminPrincipal.IsSuperAdmin(user);
             if (!_isSuper)
             {

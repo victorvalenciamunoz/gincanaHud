@@ -11,4 +11,5 @@
 @using Microsoft.AspNetCore.Components.Routing
 @using Microsoft.AspNetCore.Components.Web
 @using Microsoft.JSInterop
-@using static Microsoft.AspNetCore.Components.Web.RenderMode
+@* Everything needs a session unless a page says [AllowAnonymous] (was the server's FallbackPolicy). *@
+@attribute [Authorize]

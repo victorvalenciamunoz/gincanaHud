@@ -1,6 +1,9 @@
 @page "/login"
 @layout EmptyLayout
 @attribute [AllowAnonymous]
+@inject AdminApiClient Api
+@inject AdminSession Session
+@inject NavigationManager Nav
 
 <PageTitle>Login — Admin</PageTitle>
 
@@ -15,35 +18,52 @@
     <p class="error">Usuario o contraseña incorrectos (o la API no está lista).</p>
 }
 
-<form method="post" action="/account/login" class="form-stack">
-    <AntiforgeryToken />
-    <input type="hidden" name="returnUrl" value="@_returnUrl" />
+<form class="form-stack" @onsubmit="LoginAsync">
     <div class="field">
         <label for="username">Usuario</label>
-        <input id="username" name="username" autocomplete="username" required autofocus />
+        <input id="username" @bind="_username" autocomplete="username" required autofocus />
     </div>
     <div class="field">
         <label for="password">Contraseña</label>
-        <input id="password" name="password" type="password" autocomplete="current-password" required />
+        <input id="password" @bind="_password" type="password" autocomplete="current-password" required />
     </div>
-    <button type="submit">Entrar</button>
+    <button type="submit" disabled="@_busy">Entrar</button>
 </form>
 
 @code {
-    [SupplyParameterFromQuery(Name = "failed")]
-    public bool? Failed { get; set; }
-
     [SupplyParameterFromQuery(Name = "returnUrl")]
     public string? ReturnUrl { get; set; }
 
+    string _username = "";
+    string _password = "";
     bool _failed;
-    string _returnUrl = "/";
+    bool _busy;
 
-    protected override void OnParametersSet()
+    async Task LoginAsync()
     {
-        _failed = Failed == true;
-        _returnUrl = string.IsNullOrWhiteSpace(ReturnUrl) || !ReturnUrl.StartsWith('/')
-            ? "/"
-            : ReturnUrl;
+        _busy = true;
+        _failed = false;
+        try
+        {
+            var session = await Api.LoginAsync(_username.Trim(), _password);
+            if (session is null || session.Role is not (AdminRoles.SuperAdmin or AdminRoles.OrganizationAdmin))
+            {
+                _failed = true;
+                return;
+            }
+
+            await Session.SignInAsync(session);
+            // Only paths inside the panel: "//host" would leave the site.
+            var target = ReturnUrl is { Length: > 0 } url && url.StartsWith('/') && !url.StartsWith("//") ? url : "/";
+            Nav.NavigateTo(target);
+        }
+        catch (HttpRequestException)
+        {
+            _failed = true;
+        }
+        finally
+        {
+            _busy = false;
+        }
     }
 }

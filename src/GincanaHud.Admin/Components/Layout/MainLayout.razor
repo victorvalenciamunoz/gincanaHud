@@ -1,6 +1,7 @@
 ﻿@inherits LayoutComponentBase
 @using GincanaHud.Admin
-@inject IHttpContextAccessor HttpContextAccessor
+@inject AdminSession Session
+@inject NavigationManager Nav
 
 <div class="admin-shell">
     <header class="admin-topbar">
@@ -40,7 +41,7 @@
                 }
             </div>
         }
-        <a class="nav-logout" href="/account/logout">Salir</a>
+        <a class="nav-logout" href="/login" @onclick="LogoutAsync" @onclick:preventDefault>Salir</a>
     </nav>
     <main class="admin-main">
         @Body
@@ -54,15 +55,23 @@
 </div>
 
 @code {
+    [CascadingParameter] Task<AuthenticationState> AuthState { get; set; } = default!;
+
     string? _userName;
     string? _orgName;
     bool _isSuper;
 
-    protected override void OnParametersSet()
+    protected override async Task OnParametersSetAsync()
     {
-        var user = HttpContextAccessor.HttpContext?.User;
-        _userName = user?.Identity?.Name;
+        var user = (await AuthState).User;
+        _userName = user.Identity?.Name;
         _isSuper = AdminPrincipal.IsSuperAdmin(user);
-        _orgName = user?.FindFirst(AdminClaimTypes.OrganizationName)?.Value;
+        _orgName = user.FindFirst(AdminClaimTypes.OrganizationName)?.Value;
+    }
+
+    async Task LogoutAsync()
+    {
+        await Session.SignOutAsync();
+        Nav.NavigateTo("/login");
     }
 }

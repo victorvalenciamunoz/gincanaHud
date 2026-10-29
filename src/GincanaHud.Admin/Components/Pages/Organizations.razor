@@ -1,8 +1,6 @@
 @page "/organizations"
 @attribute [Authorize]
-@rendermode InteractiveServer
 @inject AdminApiClient Api
-@inject IHttpContextAccessor Http
 @inject NavigationManager Nav
 
 <PageTitle>Organizaciones</PageTitle>
@@ -39,6 +37,8 @@ else
 }
 
 @code {
+    [CascadingParameter] Task<AuthenticationState> AuthState { get; set; } = default!;
+
     List<OrganizationDto>? _items;
     string _name = "";
     string? _message;
@@ -46,7 +46,7 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        if (!AdminPrincipal.IsSuperAdmin(Http))
+        if (!AdminPrincipal.IsSuperAdmin((await AuthState).User))
         {
             Nav.NavigateTo("/");
             return;

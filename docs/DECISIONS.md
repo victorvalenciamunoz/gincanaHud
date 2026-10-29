@@ -303,6 +303,19 @@ handlers ni mediador. Paquetes comprobados en nuget.org el 2026-10-29 (todos MIT
   mucho (en cada instancia) y caché en memoria de un día. Se le quitan los reintentos automáticos de ServiceDefaults
   con `RemoveAllResilienceHandlers` (API experimental, `EXTEXP0001` desactivado solo en esa línea): los reintentos
   se saltarían el límite. Si Nominatim falla, la Api contesta un error con mensaje y el panel lo enseña.
+- Panel en WebAssembly (paso 4b): proyecto standalone (`Microsoft.NET.Sdk.BlazorWebAssembly`) con
+  `Components.WebAssembly`, `.DevServer` y `Components.Authorization` 10.0.14 (Microsoft, MIT).
+  - Sesión: se guarda en `localStorage` la respuesta entera del login (no solo el JWT), así no hay que leer el
+    token en el navegador para saber rol y organización. Elegido por el autor frente a `sessionStorage`: la sesión
+    sobrevive a cerrar la pestaña durante sus 12 h, como la cookie persistente de antes. Un 401 de la Api la cierra.
+  - Todas las páginas llevan `[Authorize]` desde `_Imports.razor` salvo las que dicen `[AllowAnonymous]` (login,
+    no encontrado), como la `FallbackPolicy` del servidor. Ocultar menús según el rol es solo comodidad: quien
+    decide es la Api.
+  - Dirección de la Api: en Static Web Apps es el mismo sitio (`/api`); en desarrollo, `http://localhost:5263/`
+    fijo en `Program.cs`. No va en `wwwroot/appsettings.Development.json` porque ese nombre está en el
+    `.gitignore` del repo.
+  - CORS solo en local y solo para el origen del panel, con `--cors` de Core Tools en el `launchSettings.json` de
+    la Api. En Static Web Apps no hace falta.
 - Pendiente para el paso 4: el cliente HTTP del panel nuevo devuelve los fallos de negocio de la Api (4xx con
   ProblemDetails) como `ErrorOr` (regla de `blazor.md`). El de Blazor Server sigue lanzando excepciones, ahora con el
   motivo de la Api como mensaje: pasarlo a `ErrorOr` cambiaría 9 métodos y todas las páginas sin cambiar lo que se ve.
