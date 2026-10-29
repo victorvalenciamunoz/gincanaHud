@@ -15,7 +15,7 @@ public sealed class AdminApiClient(HttpClient http)
 	public async Task<AdminLoginResponse?> LoginAsync(string username, string password, CancellationToken ct = default)
 	{
 		using var response = await http.PostAsJsonAsync(
-			"api/admin-auth/login",
+			"api/panel-auth/login",
 			new AdminLoginRequest(username, password),
 			ct);
 		if (!response.IsSuccessStatusCode)
@@ -24,12 +24,12 @@ public sealed class AdminApiClient(HttpClient http)
 	}
 
 	public Task<List<AdminUserDto>?> GetAdminUsersAsync(CancellationToken ct = default)
-		=> http.GetFromJsonAsync<List<AdminUserDto>>("api/admin-users", JsonOptions, ct);
+		=> http.GetFromJsonAsync<List<AdminUserDto>>("api/panel-users", JsonOptions, ct);
 
 	public async Task<AdminUserDto?> CreateOrgAdminAsync(CreateOrgAdminRequest request, CancellationToken ct = default)
 	{
-		using var response = await http.PostAsJsonAsync("api/admin-users", request, ct);
-		response.EnsureSuccessStatusCode();
+		using var response = await http.PostAsJsonAsync("api/panel-users", request, ct);
+		await EnsureSuccessAsync(response, ct);
 		return await response.Content.ReadFromJsonAsync<AdminUserDto>(JsonOptions, ct);
 	}
 
@@ -44,14 +44,14 @@ public sealed class AdminApiClient(HttpClient http)
 	public async Task<UserDto?> UpsertUserAsync(string displayName, CancellationToken ct = default)
 	{
 		using var response = await http.PostAsJsonAsync("api/users", new UpsertUserRequest(displayName), ct);
-		response.EnsureSuccessStatusCode();
+		await EnsureSuccessAsync(response, ct);
 		return await response.Content.ReadFromJsonAsync<UserDto>(JsonOptions, ct);
 	}
 
 	public async Task<ClearPlayersResultDto?> ClearPlayersAsync(CancellationToken ct = default)
 	{
 		using var response = await http.PostAsync("api/users/clear-players", null, ct);
-		response.EnsureSuccessStatusCode();
+		await EnsureSuccessAsync(response, ct);
 		return await response.Content.ReadFromJsonAsync<ClearPlayersResultDto>(JsonOptions, ct);
 	}
 
@@ -61,7 +61,7 @@ public sealed class AdminApiClient(HttpClient http)
 	public async Task<OrganizationDto?> CreateOrganizationAsync(string name, CancellationToken ct = default)
 	{
 		using var response = await http.PostAsJsonAsync("api/organizations", new CreateOrganizationRequest(name), ct);
-		response.EnsureSuccessStatusCode();
+		await EnsureSuccessAsync(response, ct);
 		return await response.Content.ReadFromJsonAsync<OrganizationDto>(JsonOptions, ct);
 	}
 
@@ -74,14 +74,14 @@ public sealed class AdminApiClient(HttpClient http)
 	public async Task<ActivitySummaryDto?> CreateActivityAsync(CreateActivityRequest request, CancellationToken ct = default)
 	{
 		using var response = await http.PostAsJsonAsync("api/activities", request, ct);
-		response.EnsureSuccessStatusCode();
+		await EnsureSuccessAsync(response, ct);
 		return await response.Content.ReadFromJsonAsync<ActivitySummaryDto>(JsonOptions, ct);
 	}
 
 	public async Task<ActivitySummaryDto?> UpdateActivityAsync(Guid id, UpdateActivityRequest request, CancellationToken ct = default)
 	{
 		using var response = await http.PutAsJsonAsync($"api/activities/{id}", request, ct);
-		response.EnsureSuccessStatusCode();
+		await EnsureSuccessAsync(response, ct);
 		return await response.Content.ReadFromJsonAsync<ActivitySummaryDto>(JsonOptions, ct);
 	}
 
@@ -91,7 +91,7 @@ public sealed class AdminApiClient(HttpClient http)
 	public async Task<ActivityPoiDto?> AddPoiAsync(Guid activityId, CreatePoiRequest request, CancellationToken ct = default)
 	{
 		using var response = await http.PostAsJsonAsync($"api/activities/{activityId}/pois", request, ct);
-		response.EnsureSuccessStatusCode();
+		await EnsureSuccessAsync(response, ct);
 		return await response.Content.ReadFromJsonAsync<ActivityPoiDto>(JsonOptions, ct);
 	}
 
@@ -99,14 +99,14 @@ public sealed class AdminApiClient(HttpClient http)
 		Guid activityId, Guid poiId, UpdateActivityPoiRequest request, CancellationToken ct = default)
 	{
 		using var response = await http.PutAsJsonAsync($"api/activities/{activityId}/pois/{poiId}", request, ct);
-		response.EnsureSuccessStatusCode();
+		await EnsureSuccessAsync(response, ct);
 		return await response.Content.ReadFromJsonAsync<ActivityPoiDto>(JsonOptions, ct);
 	}
 
 	public async Task RemovePoiAsync(Guid activityId, Guid poiId, CancellationToken ct = default)
 	{
 		using var response = await http.DeleteAsync($"api/activities/{activityId}/pois/{poiId}", ct);
-		response.EnsureSuccessStatusCode();
+		await EnsureSuccessAsync(response, ct);
 	}
 
 	public Task<List<PoiDto>?> GetPoisAsync(Guid? organizationId = null, CancellationToken ct = default)
@@ -122,4 +122,30 @@ public sealed class AdminApiClient(HttpClient http)
 
 	public Task<LiveProgressDto?> GetLiveProgressAsync(Guid activityId, CancellationToken ct = default)
 		=> http.GetFromJsonAsync<LiveProgressDto>($"api/activities/{activityId}/live", JsonOptions, ct);
+
+	// Like EnsureSuccessStatusCode, but the message is the Api's ProblemDetails "detail" when there is one,
+	// so the pages show the reason ("La contraseña debe tener…") instead of just the status code.
+	private static async Task EnsureSuccessAsync(HttpResponseMessage response, CancellationToken ct)
+	{
+		if (response.IsSuccessStatusCode)
+			return;
+
+		string? detail = null;
+		try
+		{
+			var problem = await response.Content.ReadFromJsonAsync<ProblemDetailsBody>(JsonOptions, ct);
+			detail = problem?.Detail;
+		}
+		catch (Exception ex) when (ex is JsonException or NotSupportedException)
+		{
+			// Not a ProblemDetails body (401/403 have none): fall back to the status code.
+		}
+
+		throw new HttpRequestException(
+			detail ?? $"La Api respondió {(int)response.StatusCode} ({response.ReasonPhrase}).",
+			inner: null,
+			response.StatusCode);
+	}
+
+	private sealed record ProblemDetailsBody(string? Detail);
 }

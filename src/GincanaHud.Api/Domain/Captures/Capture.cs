@@ -28,7 +28,7 @@ public sealed class Capture
 			UserId = userId,
 			ActivityId = activityId,
 			PoiId = poiId,
-			CapturedAt = capturedAt ?? DateTimeOffset.UtcNow,
+			CapturedAt = (capturedAt ?? DateTimeOffset.UtcNow).ToUniversalTime(),
 			DistanceMeters = distanceMeters,
 			PointsAwarded = pointsAwarded
 		};

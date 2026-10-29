@@ -9,6 +9,7 @@ using System.Text.Json.Serialization;
 var builder = FunctionsApplication.CreateBuilder(args);
 
 builder.ConfigureFunctionsWebApplication();
+builder.UseMiddleware<JwtAuthorizationMiddleware>();
 builder.AddServiceDefaults();
 builder.AddNpgsqlDbContext<AppDbContext>("gincanahud");
 builder.Services.Configure<AdminBootstrapOptions>(

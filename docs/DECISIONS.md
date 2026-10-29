@@ -292,6 +292,15 @@ handlers ni mediador. Paquetes comprobados en nuget.org el 2026-10-29 (todos MIT
   `launchSettings.json` (`--port 5263`). Se quita `PublishAsAzureContainerApp` de la Api: el despliegue de D18 se
   retira en el paso 5.
 - Se quita OpenAPI: sin `WebApplication` no hay `MapOpenApi`, y no lo usaba nadie.
+- JWT: Functions ignora `[Authorize]`, así que `JwtAuthorizationMiddleware` lo lee de la función o de su clase y lo
+  aplica con el esquema JwtBearer y las políticas de `AddGincanaJwtAuth` (sin token o token inválido → 401, sin la
+  política → 403). Todos los triggers van con `AuthorizationLevel.Anonymous`: las claves de función no se usan.
+  Se usa el `[Authorize]` estándar en vez de un atributo propio para no tener otro tipo.
+- Ninguna ruta empieza por `admin`: el host de Functions reserva ese prefijo y descarta la función sin error.
+  `admin-auth/login` pasa a `panel-auth/login` y `admin-users` a `panel-users`; solo las usa el panel.
+- Pendiente para el paso 4: el cliente HTTP del panel nuevo devuelve los fallos de negocio de la Api (4xx con
+  ProblemDetails) como `ErrorOr` (regla de `blazor.md`). El de Blazor Server sigue lanzando excepciones, ahora con el
+  motivo de la Api como mensaje: pasarlo a `ErrorOr` cambiaría 9 métodos y todas las páginas sin cambiar lo que se ve.
 
 **Alternativas descartadas**
 

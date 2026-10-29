@@ -73,8 +73,9 @@ public sealed class Activity
 			IsActive = isActive,
 			JoinCode = codeValue.Value,
 			RouteMode = routeMode,
-			StartsAt = startsAt,
-			EndsAt = endsAt
+			// Stored in UTC: Npgsql rejects other offsets, and the panel sends local time.
+			StartsAt = startsAt.ToUniversalTime(),
+			EndsAt = endsAt.ToUniversalTime()
 		};
 	}
 
@@ -107,8 +108,8 @@ public sealed class Activity
 		Title = activityTitle.Value.Value;
 		Description = description?.Trim() ?? "";
 		IsActive = isActive;
-		StartsAt = startsAt;
-		EndsAt = endsAt;
+		StartsAt = startsAt.ToUniversalTime();
+		EndsAt = endsAt.ToUniversalTime();
 		RouteMode = routeMode;
 		return Result.Success;
 	}
