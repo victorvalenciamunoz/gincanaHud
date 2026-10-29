@@ -89,9 +89,26 @@ Lo cerrado hasta la fase 11 está en `docs/historia.md`.
       y las creó `InitialCreate`. `keepalive_ping` no se tocó. El borrado no queda en el workflow.
     Validado: primera ejecución (desde la rama) con las 8 tablas recreadas y `InitialCreate` en el historial;
     segunda ejecución sin cambios; keepalive en verde después.
-  - [ ] 5b: Static Web Apps Free con panel y Functions; login y crear actividad en la nube.
-  - [ ] 5c: app MAUI a la URL nueva, partida de prueba desde el móvil (juez) y retirar Container Apps.
-- Nada desplegado en Azure: el grupo de recursos de la demo (`rg-gincanahud-demo`) está borrado.
+  - [x] 5b (2026-10-29): Static Web App `gincanahud` (plan **Free**, grupo `rg-gincanahud`, West Europe) en
+    https://salmon-stone-0fd14c103.2.azurestaticapps.net. El workflow `Despliegue` publica el panel y las Functions
+    tras las migraciones, sin compilar en Static Web Apps, y comprueba `/api/health` (D22). Ajustes de las
+    Functions en el Static Web App: `ConnectionStrings__gincanahud` (Session pooler), `Jwt__SigningKey`,
+    `AdminBootstrap__Username` y `AdminBootstrap__Password` (distinta de la local). Secreto nuevo en GitHub:
+    `AZURE_STATIC_WEB_APPS_API_TOKEN`.
+    Problemas de la nube resueltos:
+    - Static Web Apps no pasa `Authorization` a las Functions gestionadas: el panel manda el token en
+      `X-Gincana-Token` (la Api acepta las dos).
+    - OpenStreetMap bloqueaba las teselas: Static Web Apps sirve con `Referrer-Policy: same-origin`; ahora
+      `strict-origin-when-cross-origin` en `staticwebapp.config.json`.
+    - Si el sembrado del SuperAdmin falla al arrancar en la nube, las Functions arrancan igual y `/api/health`
+      contesta 503 con el tipo de error (así se vio un `28P01`, contraseña de Supabase incorrecta).
+    - La contraseña de la base de datos de Supabase se cambió (2026-10-29) en Supabase, en el Static Web App y en
+      el secreto `SUPABASE_DB_URL`; keepalive y migraciones en verde después.
+    Validado: despliegue completo en verde; desde fuera, panel en `/` y `/activities`, `/api/health` 200,
+    `/api/organizations` sin token → 401, código inexistente → 404 con ProblemDetails. El autor en la nube: login
+    de SuperAdmin, organización, actividad y POIs con el mapa.
+  - [ ] 5c: app MAUI a la URL nueva, partida de prueba desde el móvil (juez, con QR y En vivo) y retirar Container
+    Apps.
 - El keepalive diario pasa en verde (último: 2026-10-29) con los tres secretos configurados.
 
 ## Problemas conocidos

@@ -12,8 +12,13 @@ public sealed class HealthFunction(HealthCheckService health)
 		CancellationToken ct)
 	{
 		var report = await health.CheckHealthAsync(ct);
-		return report.Status == HealthStatus.Healthy
-			? Results.Text("Healthy")
-			: Results.StatusCode(StatusCodes.Status503ServiceUnavailable);
+		if (report.Status == HealthStatus.Healthy)
+			return Results.Text("Healthy");
+
+		var reasons = report.Entries
+			.Where(e => e.Value.Status != HealthStatus.Healthy)
+			.Select(e => e.Value.Description ?? e.Key);
+		return Results.Text(
+			$"Unhealthy: {string.Join("; ", reasons)}", statusCode: StatusCodes.Status503ServiceUnavailable);
 	}
 }

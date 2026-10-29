@@ -344,8 +344,26 @@ tablas de Supabase se habían creado sin migraciones y sus datos eran de prueba 
 - Supabase empezó de cero (elegido por el autor): se borraron una vez las tablas de la app y se crearon con
   `InitialCreate`. `keepalive_ping` es del keepalive y no la toca nadie más.
 
+- Static Web App `gincanahud` con plan Free en West Europe (paso 5b). Sin aviso de presupuesto (elegido por el
+  autor): el plan Free no cobra por exceso, deja de servir.
+- La Action publica (`dotnet publish`) el panel y las Functions y los sube con `Azure/static-web-apps-deploy`
+  con `skip_app_build` y `skip_api_build`: no depende del SDK que tenga la imagen de Static Web Apps. GitHub avisa
+  de que `skip_api_build` no está en el `action.yml`, pero la acción lo respeta. El trimmer del panel conserva
+  `GincanaHud.Shared` entero (los DTOs se leen por reflexión).
+- Los ajustes de las Functions viven en el Static Web App, no en GitHub. La cadena de Supabase y la contraseña del
+  SuperAdmin las pone el autor en el portal: así no pasan por la conversación ni por los logs.
+- El token del panel va en la cabecera `X-Gincana-Token` (`ApiHeaders.PanelToken` en Shared): Static Web Apps usa
+  `Authorization` para su propia autenticación y no lo pasa a las Functions gestionadas. La Api acepta las dos.
+- `Referrer-Policy: strict-origin-when-cross-origin` en `staticwebapp.config.json`: con el `same-origin` que pone
+  Static Web Apps, el navegador no manda `Referer` y OpenStreetMap bloquea las teselas.
+- Fuera de Development, si el sembrado falla al arrancar, las Functions arrancan igual y `/api/health` contesta
+  503 con el tipo de error y el código de Postgres (no el mensaje, que puede llevar el usuario). Sin Application
+  Insights no hay otra forma de ver por qué no arranca.
+
 **Alternativas descartadas**
 
 - `dotnet ef database update` en la Action: necesita la cadena en formato Npgsql y el secreto puede ser una URI.
+- Application Insights para ver los errores de las Functions: es de pago fuera de su cuota gratuita.
+- Funciones propias enlazadas («bring your own functions»): exigen el plan Standard, que es de pago.
 - Conservar las tablas y marcar `InitialCreate` como aplicada: había que comparar el esquema columna a columna para
   conservar datos de prueba.

@@ -46,6 +46,13 @@ dotnet run --project src/GincanaHud.AppHost
 - F5 desde el IDE suele fallar con `Executable run request: 500` (D12): mejor `dotnet run`.
 - Los admins de empresa se crean desde el panel (SuperAdmin → Admins empresa), no en secretos.
 
+## Despliegue
+
+- Panel y Functions en Azure Static Web Apps Free (`gincanahud`, grupo `rg-gincanahud`); Postgres en Supabase (D22).
+- Workflow `Despliegue` lanzado a mano: migraciones en Supabase y después publicación. `gh workflow run deploy.yml`.
+- Ajustes de las Functions (conexión, clave JWT, SuperAdmin) en el Static Web App. No pegues secretos en el chat:
+  `az` en PowerShell repite la línea entera si falla.
+
 ## Repo
 
 `victorvalenciamunoz/gincanaHud`, público. No tiene CI de build ni `main` protegida: aun así, cada paso en una rama

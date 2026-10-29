@@ -1,7 +1,9 @@
-# Despliegue a la nube (fase 12, D20): migraciones en Supabase y, desde el paso 5b, Static Web Apps.
+# Despliegue a la nube (fase 12, D20, D22): migraciones en Supabase y después panel + Functions en Static Web Apps.
 #
 # Secrets (GitHub → Settings → Secrets):
 #   SUPABASE_DB_URL — connection string del session pooler (el mismo que usa el keepalive)
+#   AZURE_STATIC_WEB_APPS_API_TOKEN — token de despliegue del Static Web App
+# Los ajustes de las Functions (conexión, clave JWT, SuperAdmin) viven en el Static Web App, no aquí.
 
 name: Despliegue
 
@@ -52,3 +54,46 @@ jobs:
         run: |
           psql -v ON_ERROR_STOP=1 -f migrate.sql
           psql -c 'select "MigrationId" from "__EFMigrationsHistory" order by "MigrationId"'
+
+  publish:
+    name: Panel y Functions en Static Web Apps
+    needs: migrate
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      SITE_URL: https://salmon-stone-0fd14c103.2.azurestaticapps.net
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: .NET (versión de global.json)
+        uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+
+      - name: Publicar panel (WebAssembly) y Functions
+        run: |
+          dotnet publish src/GincanaHud.Admin -c Release -o out/admin
+          dotnet publish src/GincanaHud.Api -c Release -o out/api
+
+      - name: Subir a Static Web Apps
+        uses: Azure/static-web-apps-deploy@v1
+        with:
+          azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
+          action: upload
+          app_location: out/admin/wwwroot
+          api_location: out/api
+          output_location: ""
+          skip_app_build: true
+          skip_api_build: true
+
+      - name: Comprobar /api/health
+        run: |
+          # El primer arranque en frío tarda unos segundos.
+          for i in $(seq 1 20); do
+            code=$(curl -s -o /dev/null -w '%{http_code}' "$SITE_URL/api/health" || true)
+            echo "intento $i: $code"
+            [ "$code" = "200" ] && exit 0
+            sleep 10
+          done
+          exit 1
