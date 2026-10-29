@@ -1,4 +1,5 @@
 using System.Text;
+using GincanaHud.Shared;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 
@@ -34,6 +35,17 @@ public static class JwtAuthExtensions
 			.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 			.AddJwtBearer(options =>
 			{
+				options.Events = new JwtBearerEvents
+				{
+					// Static Web Apps does not forward Authorization to managed functions: the panel uses its own header.
+					OnMessageReceived = context =>
+					{
+						var token = context.Request.Headers[ApiHeaders.PanelToken].ToString();
+						if (!string.IsNullOrWhiteSpace(token))
+							context.Token = token;
+						return Task.CompletedTask;
+					}
+				};
 				options.TokenValidationParameters = new TokenValidationParameters
 				{
 					ValidateIssuer = true,
