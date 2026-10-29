@@ -8,6 +8,8 @@
 
   <ItemGroup>
     <ProjectReference Include="..\GincanaHud.Shared\GincanaHud.Shared.csproj" />
+    <!-- The DTOs are read by System.Text.Json through reflection: the publish trimmer must keep them whole. -->
+    <TrimmerRootAssembly Include="GincanaHud.Shared" />
   </ItemGroup>
 
   <ItemGroup>

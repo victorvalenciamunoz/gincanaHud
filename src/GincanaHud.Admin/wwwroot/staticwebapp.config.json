@@ -1,0 +1,9 @@
+{
+  "navigationFallback": {
+    "rewrite": "/index.html",
+    "exclude": [ "/_framework/*", "/js/*", "*.{css,js,json,wasm,dat,ico,png,svg,webmanifest}" ]
+  },
+  "platform": {
+    "apiRuntime": "dotnet-isolated:10.0"
+  }
+}
