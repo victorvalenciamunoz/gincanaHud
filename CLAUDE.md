@@ -24,7 +24,8 @@ Lee `docs/VISION.md` (el porqué y los requisitos), `docs/DOMAIN.md` (modelo), `
 
 - `GincanaHud.App`: MAUI, Android, **.NET 11 Preview** (D1). MVVM + XAML C# Expressions (D6). No está en la
   solución: se compila aparte.
-- `GincanaHud.Api`: ASP.NET Core Minimal API, .NET 10. Escalón 3 de `api.md` (dominio): D13, D14.
+- `GincanaHud.Api`: Azure Functions .NET 10 isolated con integración ASP.NET Core (D20, D21; los endpoints del
+  panel aún no son funciones, paso 3b de la fase 12). Escalón 3 de `api.md` (dominio): D13, D14.
 - `GincanaHud.Admin`: Blazor Server (D9), cliente HTTP de la Api. Login por cookie + JWT de la Api (D17).
 - `GincanaHud.Shared`: DTOs y geodesia. `GincanaHud.AppHost`: Aspire en local.
 - Postgres: en local, contenedor de Aspire; en la nube, Supabase Free (D18).
@@ -39,7 +40,8 @@ dotnet user-secrets set "Parameters:admin-password" "ELIGE_UNA" --project src/Gi
 dotnet run --project src/GincanaHud.AppHost
 ```
 
-- Hace falta Docker Desktop. Un solo AppHost a la vez (puertos `17017` / `22198`).
+- Hace falta Docker Desktop y Azure Functions Core Tools (`func`) en el PATH. Un solo AppHost a la vez (puertos
+  `17017` / `22198`).
 - F5 desde el IDE suele fallar con `Executable run request: 500` (D12): mejor `dotnet run`.
 - Los admins de empresa se crean desde el panel (SuperAdmin → Admins empresa), no en secretos.
 

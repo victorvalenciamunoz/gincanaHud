@@ -1,11 +1,10 @@
 @GincanaHud.Api_HostAddress = http://localhost:5263
 
-GET {{GincanaHud.Api_HostAddress}}/openapi/v1.json
-Accept: application/json
+GET {{GincanaHud.Api_HostAddress}}/api/health
 
 ###
 
-GET {{GincanaHud.Api_HostAddress}}/weatherforecast/
+GET {{GincanaHud.Api_HostAddress}}/api/activities/by-code/DEMO01
 Accept: application/json
 
 ###

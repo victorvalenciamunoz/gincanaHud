@@ -12,3 +12,6 @@ appsettings.Development.json
 # Build noise
 build-hud.txt
 *.log
+
+# Azure Functions (local)
+local.settings.json

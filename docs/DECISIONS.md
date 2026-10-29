@@ -58,6 +58,8 @@ El cliente móvil sigue siendo MAUI HUD; la gestión no va en la app de calle.
 
 ## D9 — Admin UI: Blazor Server
 
+> Se sustituye por Blazor WebAssembly en la fase 12, paso 4 (D20).
+
 Panel de gestión (**Blazor Server**, host propio en el monorepo, orquestado por Aspire) sobre la misma API/DB:
 
 - CRUD POIs, actividades, asignación, usuarios.
@@ -136,6 +138,8 @@ Panel Admin con **cookie authentication**. Sustituido parcialmente por **D17** (
 | **Azure (futuro)** | Key Vault → mismos parámetros |
 
 ## D18 — Azure demo: ACA + borrar resource group
+
+> Se retira en la fase 12, paso 5 (D20).
 
 **Contexto:** portfolio / aprendizaje; no queremos coste fijo 24/7.
 
@@ -220,4 +224,77 @@ Flujo jugador: escanear QR o teclear código → nombre (+ contacto) → jugar �
 
 Fase 1 (esta): dominio + API + Admin. Fase 2: HUD elige por cercanía. Fase 3: copy / live pulidos.
 
-**Schema:** sin migraciones EF; con `EnsureCreated`, si el modelo no cuadra (p. ej. falta columna) se **borra y recrea** la BD en el seeder. Preferible a parches `ALTER` en este side project.
+**Schema** (se sustituye por migraciones de EF Core en la fase 12, paso 2, D20): sin migraciones EF; con `EnsureCreated`, si el modelo no cuadra (p. ej. falta columna) se **borra y recrea** la BD en el seeder. Preferible a parches `ALTER` en este side project.
+
+## D20 — Infraestructura a 0 €: Static Web Apps Free + Functions + Supabase
+
+**Contexto:** el despliegue de D18 (Container Apps) cuesta dinero aunque no se use: el registro de imágenes se
+cobra por día. Se quiere poder dejar la app siempre desplegada sin coste. Límites comprobados el 2026-10-28 en la
+documentación oficial.
+
+**Decisión**
+
+- Panel en **Blazor WebAssembly**, servido por **Azure Static Web Apps Free** (sustituye a D9 en el paso 4).
+- Api como **Functions gestionadas** de esa Static Web App, **.NET 10 isolated** (`dotnet-isolated:10.0`). El
+  proyecto `GincanaHud.Api` se convierte en proyecto de Functions: dominio, handlers, mediador y ErrorOr no cambian;
+  cada endpoint Minimal API pasa a ser una función HTTP. JWT validado en un middleware propio.
+- Postgres sigue en **Supabase Free**. El esquema pasa a **migraciones de EF Core** (ya se usa EF; en
+  AgendaMonitores se eligió SQL a mano porque usa Dapper). Sustituye a la nota de esquema de D19.
+  - En Development la Api aplica las migraciones y siembra la demo al arrancar; una BD de Docker anterior sin
+    historial de migraciones se borra y se recrea.
+  - Fuera de Development la Api no toca el esquema ni crea la demo: las migraciones las aplica el despliegue.
+    Al arrancar solo asegura el SuperAdmin de la configuración (una consulta y una verificación de contraseña,
+    ~0,1 s frente a 2–5 s de arranque en frío; no compensa sacarlo a otro proceso).
+- El token del panel se guarda en el navegador y dura lo mismo que ahora (12 h).
+- Búsqueda de lugares a través de una función intermediaria con caché (la política de Nominatim lo pide).
+- La salud de la Api pasa a `/api/health`: en Static Web Apps, `/health` lo contesta la web estática.
+- En local, Aspire lanza las Functions con Azure Functions Core Tools.
+- Al terminar (paso 5) se retira el despliegue de D18.
+
+**Límites que hay que vigilar**
+
+- Static Web Apps Free: 100 GB/mes de tráfico, sin pago por exceso (deja de servir); 250 MB por app.
+- Supabase Free: 500 MB y 2 proyectos activos (GincanaHud y AgendaMonitores ya los ocupan). Pausa tras una semana
+  sin uso, cubierta por el keepalive.
+- Arranque en frío de unos segundos tras un rato sin uso: el móvil ya reintenta y tiene cola sin conexión; el panel
+  despierta la Api al abrir el directo.
+
+**Alternativas descartadas**
+
+- Container Apps sin registro de pago (imágenes en GitHub Container Registry): gratis solo dentro de una cuota, con
+  tarjeta y riesgo de cobro.
+- App Service Free (F1) con el código tal cual: 60 min de CPU al día para Api + panel; un evento de 100 jugadores
+  durante 4 horas se acerca al límite y, si se agota, la web se para hasta el día siguiente. Además, 5 conexiones
+  de Blazor Server como mucho y sin dominio propio.
+- Panel en Static Web Apps + Api en App Service F1: mismo riesgo de CPU y dos despliegues.
+
+## D21 — Cómo pasa la Api a Functions
+
+**Contexto:** paso 3 de la fase 12 (D20). Los endpoints Minimal API pasan a funciones HTTP sin tocar dominio,
+handlers ni mediador. Paquetes comprobados en nuget.org el 2026-10-29 (todos MIT y con versiones de 2026).
+
+**Decisión**
+
+- `GincanaHud.Api` usa `Microsoft.NET.Sdk` + `Microsoft.Azure.Functions.Worker` 2.52.0, `.Worker.Sdk` 2.1.0 y
+  `.Worker.Extensions.Http.AspNetCore` 2.1.1 (integración ASP.NET Core: las funciones reciben `HttpRequest` y
+  devuelven el mismo `IResult` que antes, así que `ToHttpResult` y los ProblemDetails no cambian). Los `using` que
+  ponía el SDK web se añaden en el csproj.
+- Una clase de funciones por feature (`ActivitiesFunctions`, `UsersFunctions`…) con el `ISender` por constructor.
+  Las rutas no llevan `/api`: lo pone Functions, así que las URL no cambian.
+- El cuerpo se lee con `ReadFromJsonAsync` (`WithJsonBodyAsync`), que usa las mismas opciones JSON de siempre (enums
+  como texto). Cuerpo vacío o roto → 400, como Minimal API. No se usa el `[FromBody]` del worker para no tener dos
+  configuraciones de JSON.
+- `/api/health` existe en todos los entornos (en la nube el móvil lo usa). Solo comprueba que el proceso responde,
+  no expone nada. La app da la Api por viva solo con un 2xx: antes valía cualquier respuesta < 500 porque `/health`
+  solo existía en desarrollo.
+- En local, Aspire lanza las Functions con `AddAzureFunctionsProject` (`Aspire.Hosting.Azure.Functions` 13.4.6, la
+  versión del resto de Aspire), que añade Azurite como almacenamiento del host. El puerto 5263 sale de
+  `launchSettings.json` (`--port 5263`). Se quita `PublishAsAzureContainerApp` de la Api: el despliegue de D18 se
+  retira en el paso 5.
+- Se quita OpenAPI: sin `WebApplication` no hay `MapOpenApi`, y no lo usaba nadie.
+
+**Alternativas descartadas**
+
+- Lanzar `func start` con `AddExecutable`: sin paquete ni Azurite, pero con el puerto y las conexiones cableados a
+  mano (elegido por el autor).
+- Un proyecto de Functions nuevo al lado de la Api: dos proyectos para lo mismo; D20 ya decía convertir el actual.
