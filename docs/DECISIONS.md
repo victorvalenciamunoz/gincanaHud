@@ -385,7 +385,10 @@ para los tests de base de datos y que `main` exija el CI en verde.
 - `global.json` activa Microsoft.Testing.Platform (`"test": { "runner": … }`, elegido por el autor): con el SDK de
   .NET 10, `dotnet test` ya no ejecuta xUnit v3 con VSTest. La versión del SDK no cambia.
 - Workflow `CI` en cada PR y en `main`: `dotnet build -warnaserror` y `dotnet test`. La app MAUI no está en la
-  solución y no entra. `main` exige el CI en verde para fusionar.
+  solución y no entra. `main` exige el check «Build y tests» en verde para fusionar, también al administrador
+  (`enforce_admins`), sin revisiones obligatorias (hay un solo desarrollador).
+- Acciones en Node 24 (`actions/checkout@v7`, `actions/setup-dotnet@v6`): las v4 usan Node 20, obsoleto en los
+  runners de GitHub.
 - Los tests de base de datos (paso b) usarán `Testcontainers.PostgreSql`: el fallo de fechas de la fase 12 solo
   aparecía con Postgres de verdad.
 - En los tests, coordenadas neutras alrededor de (0, 0): el repo es público.

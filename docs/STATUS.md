@@ -7,10 +7,13 @@ Lo cerrado hasta la fase 11 está en `docs/historia.md`.
 
 ## Fase 13 — en marcha
 
-- [ ] Paso a — dominio y CI: proyecto `tests/GincanaHud.Tests` (xUnit v3, Microsoft.Testing.Platform activado en
-  `global.json`) con 44 tests de `Activity` (ventana de juego, UTC, código de unión, participantes, POIs), objetos
-  de valor y `GeoMath`. Workflow `CI` (`ci.yml`): en cada PR y en `main`, build con avisos como errores y tests
-  (D23). En local: 0 avisos, 44 tests en verde.
+- [x] Paso a — dominio y CI (2026-10-29): proyecto `tests/GincanaHud.Tests` (xUnit v3, Microsoft.Testing.Platform
+  activado en `global.json`) con 44 tests de `Activity` (ventana de juego, UTC, código de unión, participantes,
+  POIs), objetos de valor y `GeoMath`. Workflow `CI` (`ci.yml`): en cada PR y en `main`, build con avisos como
+  errores y tests. `main` protegida: exige «Build y tests» en verde, también al administrador (D23). Las acciones
+  de los tres workflows pasan a `checkout@v7` y `setup-dotnet@v6` (Node 24).
+  Validado: en local y en el CI, 0 avisos y 44 tests en verde; un test roto a propósito puso el CI en rojo y la PR
+  en `BLOCKED`; al deshacerlo, verde y `CLEAN`. Despliegue y keepalive en verde con las acciones nuevas.
 - [ ] Paso b — handlers contra Postgres (Testcontainers).
 - [ ] Paso c — cliente del panel.
 
