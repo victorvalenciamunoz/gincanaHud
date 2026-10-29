@@ -1,7 +1,6 @@
 @page "/activities/{Id:guid}"
 @rendermode InteractiveServer
 @inject AdminApiClient Api
-@inject GeocodeService Geocode
 @inject IHttpContextAccessor Http
 @inject NavigationManager Nav
 
@@ -175,7 +174,7 @@ else if (_detail is not null)
     DateTime _endsLocal = DateTime.Now.AddDays(1);
 
     string _search = "";
-    List<GeocodeHit>? _hits;
+    List<GeocodeHitDto>? _hits;
     PoiMap? _map;
     double _mapLat = 48.0;
     double _mapLon = 9.0;
@@ -253,7 +252,7 @@ else if (_detail is not null)
         _busy = true;
         try
         {
-            _hits = (await Geocode.SearchAsync(_search)).ToList();
+            _hits = await Api.SearchPlacesAsync(_search) ?? [];
             if (_hits.Count == 1)
                 await GoToHitAsync(_hits[0]);
             else if (_hits.Count == 0)
@@ -263,7 +262,7 @@ else if (_detail is not null)
         finally { _busy = false; }
     }
 
-    async Task GoToHitAsync(GeocodeHit hit)
+    async Task GoToHitAsync(GeocodeHitDto hit)
     {
         _mapLat = hit.Latitude;
         _mapLon = hit.Longitude;

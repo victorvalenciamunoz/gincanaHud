@@ -42,12 +42,6 @@ builder.Services.AddHttpClient<AdminApiClient>(client =>
 	client.BaseAddress = new Uri("https+http://api");
 }).AddHttpMessageHandler<AdminApiAuthHandler>();
 
-builder.Services.AddHttpClient<GeocodeService>(client =>
-{
-	client.BaseAddress = new Uri("https://nominatim.openstreetmap.org/");
-	client.DefaultRequestHeaders.UserAgent.ParseAdd("GincanaHud.Admin/0.1 (side-project; contact=local)");
-});
-
 var app = builder.Build();
 
 app.MapDefaultEndpoints();
@@ -81,12 +75,12 @@ app.MapPost("/account/login", async (HttpContext http, AdminApiClient api) =>
 	}
 	catch
 	{
-		return Results.Redirect("/login?failed=1");
+		return Results.Redirect("/login?failed=true");
 	}
 
 	if (session is null)
 	{
-		var fail = "/login?failed=1";
+		var fail = "/login?failed=true";
 		if (!string.IsNullOrWhiteSpace(returnUrl) && returnUrl.StartsWith('/'))
 			fail += $"&returnUrl={Uri.EscapeDataString(returnUrl)}";
 		return Results.Redirect(fail);
@@ -94,7 +88,7 @@ app.MapPost("/account/login", async (HttpContext http, AdminApiClient api) =>
 
 	var role = session.Role?.Trim() ?? "";
 	if (role is not (AdminRoles.SuperAdmin or AdminRoles.OrganizationAdmin))
-		return Results.Redirect("/login?failed=1");
+		return Results.Redirect("/login?failed=true");
 
 	var claims = new List<Claim>
 	{

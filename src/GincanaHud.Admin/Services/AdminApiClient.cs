@@ -123,6 +123,13 @@ public sealed class AdminApiClient(HttpClient http)
 	public Task<LiveProgressDto?> GetLiveProgressAsync(Guid activityId, CancellationToken ct = default)
 		=> http.GetFromJsonAsync<LiveProgressDto>($"api/activities/{activityId}/live", JsonOptions, ct);
 
+	public async Task<List<GeocodeHitDto>?> SearchPlacesAsync(string query, CancellationToken ct = default)
+	{
+		using var response = await http.GetAsync($"api/places?q={Uri.EscapeDataString(query.Trim())}", ct);
+		await EnsureSuccessAsync(response, ct);
+		return await response.Content.ReadFromJsonAsync<List<GeocodeHitDto>>(JsonOptions, ct);
+	}
+
 	// Like EnsureSuccessStatusCode, but the message is the Api's ProblemDetails "detail" when there is one,
 	// so the pages show the reason ("La contraseña debe tener…") instead of just the status code.
 	private static async Task EnsureSuccessAsync(HttpResponseMessage response, CancellationToken ct)

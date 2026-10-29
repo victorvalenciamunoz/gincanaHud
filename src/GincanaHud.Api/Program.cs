@@ -2,6 +2,7 @@ using GincanaHud.Api;
 using GincanaHud.Api.Common.Messaging;
 using GincanaHud.Api.Data;
 using GincanaHud.Api.Domain.Admin;
+using GincanaHud.Api.Features.Places;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Azure.Functions.Worker.Builder;
 using System.Text.Json.Serialization;
@@ -18,6 +19,18 @@ builder.Services.AddSingleton<IPasswordHasher<AdminUser>, PasswordHasher<AdminUs
 builder.Services.AddGincanaJwtAuth(builder.Configuration, builder.Environment);
 builder.Services.AddProblemDetails();
 builder.Services.AddApiMediator();
+builder.Services.AddMemoryCache();
+var nominatim = builder.Services.AddHttpClient<NominatimClient>(client =>
+{
+	client.BaseAddress = new Uri("https://nominatim.openstreetmap.org/");
+	client.DefaultRequestHeaders.UserAgent.ParseAdd(
+		"GincanaHud/0.1 (+https://github.com/victorvalenciamunoz/gincanaHud)");
+});
+// No automatic retries from ServiceDefaults: they would skip the one-request-per-second limit.
+// The API is marked experimental (EXTEXP0001); there is no stable way to opt one client out.
+#pragma warning disable EXTEXP0001
+nominatim.RemoveAllResilienceHandlers();
+#pragma warning restore EXTEXP0001
 builder.Services.ConfigureHttpJsonOptions(o =>
 	o.SerializerOptions.Converters.Add(new JsonStringEnumConverter()));
 

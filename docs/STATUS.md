@@ -18,7 +18,8 @@ Lo cerrado hasta la fase 11 está en `docs/historia.md`.
   - Development: el volumen antiguo se recrea; segundo arranque sin cambios; unirse a `DEMO01` → 200.
   - Production contra una BD vacía: la Api no crea tablas y falla al arrancar. Tras `dotnet ef database update`,
     arranca, el login del SuperAdmin → 200 y no hay actividad de demo.
-- [ ] Paso 3 — Api → Functions, partido en 3a (endpoints anónimos del móvil) y 3b (JWT y endpoints del panel).
+- [x] Paso 3 — Api → Functions (2026-10-29), partido en 3a (endpoints anónimos del móvil) y 3b (JWT y endpoints del
+  panel).
   - [x] 3a (2026-10-29): `GincanaHud.Api` es un proyecto de Functions .NET 10 isolated con integración ASP.NET Core
     (D21). Funciones en `ActivitiesFunctions` (lista, unirse, por código, detalle, participantes, captura, ranking),
     `UsersFunctions` (alta de jugador) y `HealthFunction` (`/api/health`, también en `ApiHealthMonitor` de la app).
@@ -45,7 +46,24 @@ Lo cerrado hasta la fase 11 está en `docs/historia.md`.
       del móvil siguen anónimas.
     - El autor en el panel: login de SuperAdmin, crear admin de empresa (con el mensaje de contraseña corta) y, con
       él, crear actividades y POIs.
-  - [ ] Capturar y ver el ranking desde el móvil de verdad contra las Functions.
+    - Arreglo previo a Functions: un login fallido en el panel daba una excepción (redirigía con `failed=1` y la
+      página espera un booleano); ahora redirige con `failed=true` y muestra el aviso.
+  - [x] Móvil de verdad (2026-10-29): por USB con `adb reverse tcp:5263 tcp:5263` y la app apuntando a
+    `http://127.0.0.1:5263/` solo para la prueba. El autor colocó un POI de `DEMO01` cerca desde el panel, se unió
+    desde la app, capturó (100 puntos en la BD) y sale en el ranking de las Functions.
+- [ ] Paso 4 — Panel → WebAssembly, partido en 4a (búsqueda de lugares en la Api), 4b (WebAssembly con token en
+  `localStorage`) y 4c (cliente HTTP con `ErrorOr`).
+  - [x] 4a (2026-10-29): `GET /api/places?q=` (`PlacesFunctions`, solo admins) busca en Nominatim a través de
+    `NominatimClient`: User-Agent con la URL del repo, una petición por segundo como mucho, sin reintentos
+    automáticos y resultados en caché un día (D21). El panel ya no llama a Nominatim.
+    - Arreglo previo: el mapa del panel reencuadraba los POIs en cada repintado y deshacía el salto al lugar
+      buscado. Ahora solo reencuadra cuando cambia la lista de POIs.
+    Validado en local:
+    - HTTP: sin token → 401; primera búsqueda ~300 ms y la misma otra vez de caché en 25 ms; dos búsquedas nuevas
+      seguidas tardan más de 1 s; nombres con ñ y tilde bien; búsqueda vacía → lista vacía.
+    - El autor en el panel: buscar un lugar con un resultado y con varios, y el mapa va al sitio.
+  - [ ] 4b: panel en Blazor WebAssembly con login por token y sin `HttpContext`.
+  - [ ] 4c: cliente HTTP del panel con `ErrorOr`.
 
 Para el paso 5: las tablas de Supabase se crearon sin migraciones. Hay que comprobar que su esquema coincide con
 `InitialCreate` y marcarla como aplicada antes del primer `database update`.
