@@ -359,6 +359,10 @@ tablas de Supabase se habían creado sin migraciones y sus datos eran de prueba 
 - Fuera de Development, si el sembrado falla al arrancar, las Functions arrancan igual y `/api/health` contesta
   503 con el tipo de error y el código de Postgres (no el mensaje, que puede llevar el usuario). Sin Application
   Insights no hay otra forma de ver por qué no arranca.
+- La app MAUI manda los cuerpos con `Content-Length` (`BufferedRequestContentHandler`): Static Web Apps contesta
+  «Backend call failure» (500) a los cuerpos por trozos (`Transfer-Encoding: chunked`) dirigidos a sus Functions
+  gestionadas. El panel no lo necesita: el navegador siempre manda el cuerpo entero.
+- Se retira el despliegue de D18: el AppHost es solo para local.
 
 **Alternativas descartadas**
 

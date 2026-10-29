@@ -26,8 +26,9 @@ public static class MauiProgram
 			});
 
 		var apiOptions = new ApiOptions
-		{			
-			BaseUrl = "https://xd34zm76-7202.uks1.devtunnels.ms/",
+		{
+			// Static Web Apps Free (D22). To test against the local Functions: http://127.0.0.1:5263/ + adb reverse.
+			BaseUrl = "https://salmon-stone-0fd14c103.2.azurestaticapps.net/",
 			PlayerName = "jugador"
 		};
 		builder.Services.AddSingleton(apiOptions);
@@ -42,6 +43,7 @@ public static class MauiProgram
 				client.BaseAddress = new Uri(apiOptions.BaseUrl);
 				client.Timeout = TimeSpan.FromSeconds(100);
 			})
+			.AddHttpMessageHandler(() => new BufferedRequestContentHandler())
 			.AddStandardResilienceHandler();
 
 		// Cliente ligero para el indicador (sin reintentos largos del resilience handler).

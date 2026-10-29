@@ -143,8 +143,9 @@ public interface ISender
 
 ## Admin
 
-- HTTP client of the Api. No parallel domain model in Blazor.
-- Pages by product area; map/geocode = Admin infrastructure.
+- Blazor WebAssembly, HTTP client of the Api (`AdminApiClient` returns `ErrorOr`). No parallel domain model.
+- Pages by product area; the map (Leaflet) lives in the Admin, place search goes through the Api (`/api/places`).
+- Api entry points are Azure Functions (`Features/*/…Functions.cs`); they only read the request and dispatch (D21).
 
 ## Migration strategy
 
