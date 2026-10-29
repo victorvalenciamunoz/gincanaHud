@@ -1,9 +1,15 @@
+using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
+using ErrorOr;
 using GincanaHud.Shared;
 
 namespace GincanaHud.Admin.Services;
 
+/// <summary>
+/// The panel's HTTP client for the Api (blazor.md): business failures (4xx with the Api's reason) come back as
+/// <see cref="ErrorOr{TValue}"/>; 401, 5xx and network failures stay exceptions.
+/// </summary>
 public sealed class AdminApiClient(HttpClient http)
 {
 	private static readonly JsonSerializerOptions JsonOptions = new()
@@ -12,147 +18,134 @@ public sealed class AdminApiClient(HttpClient http)
 		Converters = { new System.Text.Json.Serialization.JsonStringEnumConverter() }
 	};
 
-	public async Task<AdminLoginResponse?> LoginAsync(string username, string password, CancellationToken ct = default)
-	{
-		using var response = await http.PostAsJsonAsync(
-			"api/panel-auth/login",
-			new AdminLoginRequest(username, password),
-			ct);
-		if (!response.IsSuccessStatusCode)
-			return null;
-		return await response.Content.ReadFromJsonAsync<AdminLoginResponse>(JsonOptions, ct);
-	}
+	public Task<ErrorOr<AdminLoginResponse>> LoginAsync(string username, string password, CancellationToken ct = default)
+		=> SendAsync<AdminLoginResponse>(
+			http.PostAsJsonAsync("api/panel-auth/login", new AdminLoginRequest(username, password), ct), ct);
 
-	public Task<List<AdminUserDto>?> GetAdminUsersAsync(CancellationToken ct = default)
-		=> http.GetFromJsonAsync<List<AdminUserDto>>("api/panel-users", JsonOptions, ct);
+	public Task<ErrorOr<List<AdminUserDto>>> GetAdminUsersAsync(CancellationToken ct = default)
+		=> SendAsync<List<AdminUserDto>>(http.GetAsync("api/panel-users", ct), ct);
 
-	public async Task<AdminUserDto?> CreateOrgAdminAsync(CreateOrgAdminRequest request, CancellationToken ct = default)
-	{
-		using var response = await http.PostAsJsonAsync("api/panel-users", request, ct);
-		await EnsureSuccessAsync(response, ct);
-		return await response.Content.ReadFromJsonAsync<AdminUserDto>(JsonOptions, ct);
-	}
+	public Task<ErrorOr<AdminUserDto>> CreateOrgAdminAsync(CreateOrgAdminRequest request, CancellationToken ct = default)
+		=> SendAsync<AdminUserDto>(http.PostAsJsonAsync("api/panel-users", request, ct), ct);
 
-	public Task<List<PlayerDto>?> GetUsersAsync(Guid? organizationId = null, CancellationToken ct = default)
+	public Task<ErrorOr<List<PlayerDto>>> GetUsersAsync(Guid? organizationId = null, CancellationToken ct = default)
 	{
 		var url = organizationId is Guid oid
 			? $"api/users?organizationId={oid}"
 			: "api/users";
-		return http.GetFromJsonAsync<List<PlayerDto>>(url, JsonOptions, ct);
+		return SendAsync<List<PlayerDto>>(http.GetAsync(url, ct), ct);
 	}
 
-	public async Task<UserDto?> UpsertUserAsync(string displayName, CancellationToken ct = default)
-	{
-		using var response = await http.PostAsJsonAsync("api/users", new UpsertUserRequest(displayName), ct);
-		await EnsureSuccessAsync(response, ct);
-		return await response.Content.ReadFromJsonAsync<UserDto>(JsonOptions, ct);
-	}
+	public Task<ErrorOr<UserDto>> UpsertUserAsync(string displayName, CancellationToken ct = default)
+		=> SendAsync<UserDto>(http.PostAsJsonAsync("api/users", new UpsertUserRequest(displayName), ct), ct);
 
-	public async Task<ClearPlayersResultDto?> ClearPlayersAsync(CancellationToken ct = default)
-	{
-		using var response = await http.PostAsync("api/users/clear-players", null, ct);
-		await EnsureSuccessAsync(response, ct);
-		return await response.Content.ReadFromJsonAsync<ClearPlayersResultDto>(JsonOptions, ct);
-	}
+	public Task<ErrorOr<ClearPlayersResultDto>> ClearPlayersAsync(CancellationToken ct = default)
+		=> SendAsync<ClearPlayersResultDto>(http.PostAsync("api/users/clear-players", null, ct), ct);
 
-	public Task<List<OrganizationDto>?> GetOrganizationsAsync(CancellationToken ct = default)
-		=> http.GetFromJsonAsync<List<OrganizationDto>>("api/organizations", JsonOptions, ct);
+	public Task<ErrorOr<List<OrganizationDto>>> GetOrganizationsAsync(CancellationToken ct = default)
+		=> SendAsync<List<OrganizationDto>>(http.GetAsync("api/organizations", ct), ct);
 
-	public async Task<OrganizationDto?> CreateOrganizationAsync(string name, CancellationToken ct = default)
-	{
-		using var response = await http.PostAsJsonAsync("api/organizations", new CreateOrganizationRequest(name), ct);
-		await EnsureSuccessAsync(response, ct);
-		return await response.Content.ReadFromJsonAsync<OrganizationDto>(JsonOptions, ct);
-	}
+	public Task<ErrorOr<OrganizationDto>> CreateOrganizationAsync(string name, CancellationToken ct = default)
+		=> SendAsync<OrganizationDto>(http.PostAsJsonAsync("api/organizations", new CreateOrganizationRequest(name), ct), ct);
 
-	public Task<List<ActivitySummaryDto>?> GetActivitiesAsync(bool includeInactive = false, CancellationToken ct = default)
+	public Task<ErrorOr<List<ActivitySummaryDto>>> GetActivitiesAsync(bool includeInactive = false, CancellationToken ct = default)
 	{
 		var url = includeInactive ? "api/activities?includeInactive=true" : "api/activities";
-		return http.GetFromJsonAsync<List<ActivitySummaryDto>>(url, JsonOptions, ct);
+		return SendAsync<List<ActivitySummaryDto>>(http.GetAsync(url, ct), ct);
 	}
 
-	public async Task<ActivitySummaryDto?> CreateActivityAsync(CreateActivityRequest request, CancellationToken ct = default)
-	{
-		using var response = await http.PostAsJsonAsync("api/activities", request, ct);
-		await EnsureSuccessAsync(response, ct);
-		return await response.Content.ReadFromJsonAsync<ActivitySummaryDto>(JsonOptions, ct);
-	}
+	public Task<ErrorOr<ActivitySummaryDto>> CreateActivityAsync(CreateActivityRequest request, CancellationToken ct = default)
+		=> SendAsync<ActivitySummaryDto>(http.PostAsJsonAsync("api/activities", request, ct), ct);
 
-	public async Task<ActivitySummaryDto?> UpdateActivityAsync(Guid id, UpdateActivityRequest request, CancellationToken ct = default)
-	{
-		using var response = await http.PutAsJsonAsync($"api/activities/{id}", request, ct);
-		await EnsureSuccessAsync(response, ct);
-		return await response.Content.ReadFromJsonAsync<ActivitySummaryDto>(JsonOptions, ct);
-	}
+	public Task<ErrorOr<ActivitySummaryDto>> UpdateActivityAsync(Guid id, UpdateActivityRequest request, CancellationToken ct = default)
+		=> SendAsync<ActivitySummaryDto>(http.PutAsJsonAsync($"api/activities/{id}", request, ct), ct);
 
-	public Task<ActivityDetailDto?> GetActivityAsync(Guid id, CancellationToken ct = default)
-		=> http.GetFromJsonAsync<ActivityDetailDto>($"api/activities/{id}", JsonOptions, ct);
+	public Task<ErrorOr<ActivityDetailDto>> GetActivityAsync(Guid id, CancellationToken ct = default)
+		=> SendAsync<ActivityDetailDto>(http.GetAsync($"api/activities/{id}", ct), ct);
 
-	public async Task<ActivityPoiDto?> AddPoiAsync(Guid activityId, CreatePoiRequest request, CancellationToken ct = default)
-	{
-		using var response = await http.PostAsJsonAsync($"api/activities/{activityId}/pois", request, ct);
-		await EnsureSuccessAsync(response, ct);
-		return await response.Content.ReadFromJsonAsync<ActivityPoiDto>(JsonOptions, ct);
-	}
+	public Task<ErrorOr<ActivityPoiDto>> AddPoiAsync(Guid activityId, CreatePoiRequest request, CancellationToken ct = default)
+		=> SendAsync<ActivityPoiDto>(http.PostAsJsonAsync($"api/activities/{activityId}/pois", request, ct), ct);
 
-	public async Task<ActivityPoiDto?> UpdatePoiAsync(
+	public Task<ErrorOr<ActivityPoiDto>> UpdatePoiAsync(
 		Guid activityId, Guid poiId, UpdateActivityPoiRequest request, CancellationToken ct = default)
-	{
-		using var response = await http.PutAsJsonAsync($"api/activities/{activityId}/pois/{poiId}", request, ct);
-		await EnsureSuccessAsync(response, ct);
-		return await response.Content.ReadFromJsonAsync<ActivityPoiDto>(JsonOptions, ct);
-	}
+		=> SendAsync<ActivityPoiDto>(http.PutAsJsonAsync($"api/activities/{activityId}/pois/{poiId}", request, ct), ct);
 
-	public async Task RemovePoiAsync(Guid activityId, Guid poiId, CancellationToken ct = default)
-	{
-		using var response = await http.DeleteAsync($"api/activities/{activityId}/pois/{poiId}", ct);
-		await EnsureSuccessAsync(response, ct);
-	}
+	public Task<ErrorOr<Success>> RemovePoiAsync(Guid activityId, Guid poiId, CancellationToken ct = default)
+		=> SendAsync(http.DeleteAsync($"api/activities/{activityId}/pois/{poiId}", ct), ct);
 
-	public Task<List<PoiDto>?> GetPoisAsync(Guid? organizationId = null, CancellationToken ct = default)
+	public Task<ErrorOr<List<PoiDto>>> GetPoisAsync(Guid? organizationId = null, CancellationToken ct = default)
 	{
 		var url = organizationId is Guid id
 			? $"api/pois?organizationId={id}"
 			: "api/pois";
-		return http.GetFromJsonAsync<List<PoiDto>>(url, JsonOptions, ct);
+		return SendAsync<List<PoiDto>>(http.GetAsync(url, ct), ct);
 	}
 
-	public Task<List<RankingEntryDto>?> GetRankingAsync(Guid activityId, CancellationToken ct = default)
-		=> http.GetFromJsonAsync<List<RankingEntryDto>>($"api/activities/{activityId}/ranking", JsonOptions, ct);
+	public Task<ErrorOr<List<RankingEntryDto>>> GetRankingAsync(Guid activityId, CancellationToken ct = default)
+		=> SendAsync<List<RankingEntryDto>>(http.GetAsync($"api/activities/{activityId}/ranking", ct), ct);
 
-	public Task<LiveProgressDto?> GetLiveProgressAsync(Guid activityId, CancellationToken ct = default)
-		=> http.GetFromJsonAsync<LiveProgressDto>($"api/activities/{activityId}/live", JsonOptions, ct);
+	public Task<ErrorOr<LiveProgressDto>> GetLiveProgressAsync(Guid activityId, CancellationToken ct = default)
+		=> SendAsync<LiveProgressDto>(http.GetAsync($"api/activities/{activityId}/live", ct), ct);
 
-	public async Task<List<GeocodeHitDto>?> SearchPlacesAsync(string query, CancellationToken ct = default)
+	public Task<ErrorOr<List<GeocodeHitDto>>> SearchPlacesAsync(string query, CancellationToken ct = default)
+		=> SendAsync<List<GeocodeHitDto>>(http.GetAsync($"api/places?q={Uri.EscapeDataString(query.Trim())}", ct), ct);
+
+	private static async Task<ErrorOr<T>> SendAsync<T>(Task<HttpResponseMessage> request, CancellationToken ct)
 	{
-		using var response = await http.GetAsync($"api/places?q={Uri.EscapeDataString(query.Trim())}", ct);
-		await EnsureSuccessAsync(response, ct);
-		return await response.Content.ReadFromJsonAsync<List<GeocodeHitDto>>(JsonOptions, ct);
+		using var response = await request;
+		if (!response.IsSuccessStatusCode)
+			return await ToErrorAsync(response, ct);
+
+		var value = await response.Content.ReadFromJsonAsync<T>(JsonOptions, ct);
+		if (value is null)
+			throw new HttpRequestException("La Api respondió sin datos.", inner: null, response.StatusCode);
+		return value;
 	}
 
-	// Like EnsureSuccessStatusCode, but the message is the Api's ProblemDetails "detail" when there is one,
-	// so the pages show the reason ("La contraseña debe tener…") instead of just the status code.
-	private static async Task EnsureSuccessAsync(HttpResponseMessage response, CancellationToken ct)
+	private static async Task<ErrorOr<Success>> SendAsync(Task<HttpResponseMessage> request, CancellationToken ct)
 	{
-		if (response.IsSuccessStatusCode)
-			return;
+		using var response = await request;
+		return response.IsSuccessStatusCode ? Result.Success : await ToErrorAsync(response, ct);
+	}
 
-		string? detail = null;
+	// 4xx (except 401) → Error with the Api's code and reason. 401 and 5xx → exception: the session handler already
+	// closed the session on 401, and a 5xx is not a business rule.
+	private static async Task<Error> ToErrorAsync(HttpResponseMessage response, CancellationToken ct)
+	{
+		var problem = await ReadProblemAsync(response, ct);
+		var status = (int)response.StatusCode;
+		var description = problem?.Detail ?? response.StatusCode switch
+		{
+			HttpStatusCode.Forbidden => "No tienes permiso para esto.",
+			HttpStatusCode.NotFound => "No se ha encontrado.",
+			_ => $"La Api respondió {status} ({response.ReasonPhrase})."
+		};
+
+		if (response.StatusCode == HttpStatusCode.Unauthorized || status >= 500)
+			throw new HttpRequestException(description, inner: null, response.StatusCode);
+
+		var code = problem?.Code ?? problem?.Title ?? $"Http.{status}";
+		return response.StatusCode switch
+		{
+			HttpStatusCode.NotFound => Error.NotFound(code, description),
+			HttpStatusCode.Conflict => Error.Conflict(code, description),
+			HttpStatusCode.Forbidden => Error.Forbidden(code, description),
+			_ => Error.Validation(code, description)
+		};
+	}
+
+	private static async Task<ProblemDetailsBody?> ReadProblemAsync(HttpResponseMessage response, CancellationToken ct)
+	{
 		try
 		{
-			var problem = await response.Content.ReadFromJsonAsync<ProblemDetailsBody>(JsonOptions, ct);
-			detail = problem?.Detail;
+			return await response.Content.ReadFromJsonAsync<ProblemDetailsBody>(JsonOptions, ct);
 		}
 		catch (Exception ex) when (ex is JsonException or NotSupportedException)
 		{
-			// Not a ProblemDetails body (401/403 have none): fall back to the status code.
+			// No ProblemDetails body (401/403 from the JWT middleware have none).
+			return null;
 		}
-
-		throw new HttpRequestException(
-			detail ?? $"La Api respondió {(int)response.StatusCode} ({response.ReasonPhrase}).",
-			inner: null,
-			response.StatusCode);
 	}
 
-	private sealed record ProblemDetailsBody(string? Detail);
+	private sealed record ProblemDetailsBody(string? Title, string? Detail, string? Code);
 }

@@ -56,7 +56,12 @@ else
 
     async Task ReloadAsync()
     {
-        try { _items = await Api.GetOrganizationsAsync() ?? []; }
+        try
+        {
+            var items = await Api.GetOrganizationsAsync();
+            if (items.IsError) { _message = items.FirstError.Description; return; }
+            _items = items.Value;
+        }
         catch (Exception ex) { _message = ex.Message; }
     }
 
@@ -66,7 +71,8 @@ else
         _busy = true;
         try
         {
-            await Api.CreateOrganizationAsync(_name.Trim());
+            var created = await Api.CreateOrganizationAsync(_name.Trim());
+            if (created.IsError) { _message = created.FirstError.Description; return; }
             _name = "";
             _message = "Organización creada.";
             await ReloadAsync();

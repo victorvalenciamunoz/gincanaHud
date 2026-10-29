@@ -45,14 +45,14 @@
         _failed = false;
         try
         {
-            var session = await Api.LoginAsync(_username.Trim(), _password);
-            if (session is null || session.Role is not (AdminRoles.SuperAdmin or AdminRoles.OrganizationAdmin))
+            var login = await Api.LoginAsync(_username.Trim(), _password);
+            if (login.IsError || login.Value.Role is not (AdminRoles.SuperAdmin or AdminRoles.OrganizationAdmin))
             {
                 _failed = true;
                 return;
             }
 
-            await Session.SignInAsync(session);
+            await Session.SignInAsync(login.Value);
             // Only paths inside the panel: "//host" would leave the site.
             var target = ReturnUrl is { Length: > 0 } url && url.StartsWith('/') && !url.StartsWith("//") ? url : "/";
             Nav.NavigateTo(target);

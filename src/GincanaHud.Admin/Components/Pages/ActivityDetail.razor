@@ -193,12 +193,16 @@ else if (_detail is not null)
     {
         try
         {
-            _detail = await Api.GetActivityAsync(Id);
-            if (_detail is null)
+            var detail = await Api.GetActivityAsync(Id);
+            if (detail.IsError)
             {
-                _error = "Actividad no encontrada.";
+                _detail = null;
+                _error = detail.FirstError.Type == ErrorType.NotFound
+                    ? "Actividad no encontrada."
+                    : detail.FirstError.Description;
                 return;
             }
+            _detail = detail.Value;
 
             var user = (await AuthState).User;
             if (user is not null && !AdminPrincipal.IsSuperAdmin(user))
@@ -212,7 +216,8 @@ else if (_detail is not null)
                 }
             }
 
-            _ranking = await Api.GetRankingAsync(Id) ?? [];
+            var ranking = await Api.GetRankingAsync(Id);
+            _ranking = ranking.IsError ? [] : ranking.Value;
 
             _error = null;
             _qrDataUri = JoinQrGenerator.ToPngDataUri(_detail.JoinCode);
@@ -252,13 +257,15 @@ else if (_detail is not null)
         _busy = true;
         try
         {
-            _hits = await Api.SearchPlacesAsync(_search) ?? [];
+            var hits = await Api.SearchPlacesAsync(_search);
+            if (hits.IsError) { _message = hits.FirstError.Description; return; }
+            _hits = hits.Value;
             if (_hits.Count == 1)
                 await GoToHitAsync(_hits[0]);
             else if (_hits.Count == 0)
                 _message = "Sin resultados. Prueba «Torre Eiffel, París».";
         }
-        catch (Exception ex) { _message = $"Geocoding: {ex.Message}"; }
+        catch (Exception ex) { _message = $"Búsqueda de lugares: {ex.Message}"; }
         finally { _busy = false; }
     }
 
@@ -320,13 +327,14 @@ else if (_detail is not null)
             var mode = Enum.TryParse<ActivityRouteMode>(_routeMode, out var rm)
                 ? rm
                 : ActivityRouteMode.Sequential;
-            await Api.UpdateActivityAsync(Id, new UpdateActivityRequest(
+            var saved = await Api.UpdateActivityAsync(Id, new UpdateActivityRequest(
                 _title.Trim(),
                 _description.Trim(),
                 _isActive,
                 new DateTimeOffset(_startsLocal, TimeZoneInfo.Local.GetUtcOffset(_startsLocal)),
                 new DateTimeOffset(_endsLocal, TimeZoneInfo.Local.GetUtcOffset(_endsLocal)),
                 mode));
+            if (saved.IsError) { _message = saved.FirstError.Description; return; }
             _message = "Actividad guardada.";
             await ReloadAsync();
         }
@@ -359,13 +367,14 @@ else if (_detail is not null)
         _busy = true;
         try
         {
-            await Api.AddPoiAsync(Id, new CreatePoiRequest(
+            var added = await Api.AddPoiAsync(Id, new CreatePoiRequest(
                 _detail!.OrganizationId,
                 string.IsNullOrWhiteSpace(_poiName) ? "POI" : _poiName.Trim(),
                 lat, lon,
                 radius > 0 ? radius : 25,
                 string.IsNullOrWhiteSpace(_clue) ? "Sin pista." : _clue.Trim(),
                 points > 0 ? points : 100));
+            if (added.IsError) { _message = added.FirstError.Description; return; }
             _message = "POI añadido.";
             ClearPoiForm();
             await ReloadAsync();
@@ -384,13 +393,14 @@ else if (_detail is not null)
         _busy = true;
         try
         {
-            await Api.UpdatePoiAsync(Id, poiId, new UpdateActivityPoiRequest(
+            var updated = await Api.UpdatePoiAsync(Id, poiId, new UpdateActivityPoiRequest(
                 string.IsNullOrWhiteSpace(_poiName) ? "POI" : _poiName.Trim(),
                 lat, lon,
                 radius > 0 ? radius : 25,
                 string.IsNullOrWhiteSpace(_clue) ? "Sin pista." : _clue.Trim(),
                 points > 0 ? points : 100,
                 order > 0 ? order : 1));
+            if (updated.IsError) { _message = updated.FirstError.Description; return; }
             _message = "POI actualizado.";
             ClearPoiForm();
             await ReloadAsync();
@@ -404,7 +414,8 @@ else if (_detail is not null)
         _busy = true;
         try
         {
-            await Api.RemovePoiAsync(Id, p.PoiId);
+            var removed = await Api.RemovePoiAsync(Id, p.PoiId);
+            if (removed.IsError) { _message = removed.FirstError.Description; return; }
             _message = $"Quitado «{p.Name}».";
             if (_editingPoiId == p.PoiId)
                 ClearPoiForm();

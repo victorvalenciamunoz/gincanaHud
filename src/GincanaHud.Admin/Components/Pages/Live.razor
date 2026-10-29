@@ -240,7 +240,11 @@
                     orgId = oid;
             }
 
-            var all = await Api.GetActivitiesAsync(includeInactive: true) ?? [];
+            var activities = await Api.GetActivitiesAsync(includeInactive: true);
+            if (activities.IsError)
+                _error = activities.FirstError.Description;
+
+            var all = activities.IsError ? [] : activities.Value;
             if (orgId is Guid filterOrg)
                 all = all.Where(a => a.OrganizationId == filterOrg).ToList();
 
@@ -311,13 +315,14 @@
         _error = null;
         try
         {
-            var next = await Api.GetLiveProgressAsync(_selectedGuid.Value);
-            if (next is null)
+            var progress = await Api.GetLiveProgressAsync(_selectedGuid.Value);
+            if (progress.IsError)
             {
-                _error = "No se pudo cargar el progreso.";
+                _error = progress.FirstError.Description;
                 return;
             }
 
+            var next = progress.Value;
             ApplyLiveSnapshot(next);
             _live = next;
             RebuildPodium();

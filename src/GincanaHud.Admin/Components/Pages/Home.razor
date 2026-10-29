@@ -65,12 +65,20 @@ else
             var poisTask = Api.GetPoisAsync(orgId);
             await Task.WhenAll(usersTask, activitiesTask, poisTask);
 
-            _players = (await usersTask)?.Count ?? 0;
-            var activities = await activitiesTask ?? [];
-            if (orgId is Guid filter)
-                activities = activities.Where(a => a.OrganizationId == filter).ToList();
-            _activities = activities.Count;
-            _pois = (await poisTask)?.Count ?? 0;
+            var users = await usersTask;
+            var activities = await activitiesTask;
+            var pois = await poisTask;
+            if (new IErrorOr[] { users, activities, pois }.FirstOrDefault(r => r.IsError) is { Errors: [var first, ..] })
+            {
+                _error = first.Description;
+                return;
+            }
+
+            _players = users.Value.Count;
+            _activities = orgId is Guid filter
+                ? activities.Value.Count(a => a.OrganizationId == filter)
+                : activities.Value.Count;
+            _pois = pois.Value.Count;
         }
         catch (Exception ex)
         {

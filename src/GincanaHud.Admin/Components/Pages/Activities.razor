@@ -115,12 +115,17 @@ else
         try
         {
             if (_isSuper)
-                _orgs = await Api.GetOrganizationsAsync() ?? [];
+            {
+                var orgs = await Api.GetOrganizationsAsync();
+                if (orgs.IsError) { _message = orgs.FirstError.Description; return; }
+                _orgs = orgs.Value;
+            }
 
-            var all = await Api.GetActivitiesAsync(includeInactive: true) ?? [];
+            var all = await Api.GetActivitiesAsync(includeInactive: true);
+            if (all.IsError) { _message = all.FirstError.Description; return; }
             _items = _fixedOrgId is Guid oid
-                ? all.Where(a => a.OrganizationId == oid).ToList()
-                : all;
+                ? all.Value.Where(a => a.OrganizationId == oid).ToList()
+                : all.Value;
 
             _qrByCode = _items
                 .GroupBy(a => a.JoinCode, StringComparer.Ordinal)
@@ -155,8 +160,9 @@ else
             var mode = Enum.TryParse<ActivityRouteMode>(_routeMode, out var rm)
                 ? rm
                 : ActivityRouteMode.Sequential;
-            await Api.CreateActivityAsync(new CreateActivityRequest(
+            var created = await Api.CreateActivityAsync(new CreateActivityRequest(
                 orgId, _title.Trim(), _description.Trim(), starts, ends, mode));
+            if (created.IsError) { _message = created.FirstError.Description; return; }
             _title = "";
             _description = "";
             _routeMode = nameof(ActivityRouteMode.Sequential);
