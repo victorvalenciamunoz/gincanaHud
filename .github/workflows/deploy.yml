@@ -42,7 +42,8 @@ jobs:
           # EF construye la Api para leer el modelo; no se conecta a ninguna base de datos.
           ConnectionStrings__gincanahud: "Host=unused;Database=unused"
         run: |
-          dotnet ef migrations script --idempotent --project src/GincanaHud.Api -o migrate.sql
+          dotnet build src/GincanaHud.Api
+          dotnet ef migrations script --idempotent --no-build --project src/GincanaHud.Api -o migrate.sql
           sed -i '1s/^\xEF\xBB\xBF//' migrate.sql
 
       - name: Conexión a Supabase
