@@ -108,7 +108,12 @@ else
 
     async Task ReloadAsync()
     {
-        try { _players = await Api.GetUsersAsync(_orgId) ?? []; }
+        try
+        {
+            var players = await Api.GetUsersAsync(_orgId);
+            if (players.IsError) { _message = players.FirstError.Description; return; }
+            _players = players.Value;
+        }
         catch (Exception ex) { _message = ex.Message; }
     }
 
@@ -119,7 +124,8 @@ else
         try
         {
             var user = await Api.UpsertUserAsync(_name.Trim());
-            _message = user is null ? "Sin respuesta" : $"OK: {user.DisplayName}";
+            if (user.IsError) { _message = user.FirstError.Description; return; }
+            _message = $"OK: {user.Value.DisplayName}";
             _name = "";
             await ReloadAsync();
         }
@@ -133,10 +139,10 @@ else
         _busy = true;
         try
         {
-            var result = await Api.ClearPlayersAsync();
-            _message = result is null
-                ? "Sin respuesta al vaciar."
-                : $"Vacío: {result.UsersDeleted} jugadores, {result.ParticipantsDeleted} inscripciones, {result.CapturesDeleted} capturas.";
+            var cleared = await Api.ClearPlayersAsync();
+            if (cleared.IsError) { _message = cleared.FirstError.Description; return; }
+            var result = cleared.Value;
+            _message = $"Vacío: {result.UsersDeleted} jugadores, {result.ParticipantsDeleted} inscripciones, {result.CapturesDeleted} capturas.";
             await ReloadAsync();
         }
         catch (Exception ex) { _message = ex.Message; }

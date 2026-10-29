@@ -73,8 +73,13 @@ else
     {
         try
         {
-            _orgs = await Api.GetOrganizationsAsync() ?? [];
-            _items = await Api.GetAdminUsersAsync() ?? [];
+            var orgs = await Api.GetOrganizationsAsync();
+            if (orgs.IsError) { _message = orgs.FirstError.Description; return; }
+            _orgs = orgs.Value;
+
+            var items = await Api.GetAdminUsersAsync();
+            if (items.IsError) { _message = items.FirstError.Description; return; }
+            _items = items.Value;
         }
         catch (Exception ex) { _message = ex.Message; }
     }
@@ -90,7 +95,8 @@ else
         _busy = true;
         try
         {
-            await Api.CreateOrgAdminAsync(new CreateOrgAdminRequest(_username.Trim(), _password, orgId));
+            var created = await Api.CreateOrgAdminAsync(new CreateOrgAdminRequest(_username.Trim(), _password, orgId));
+            if (created.IsError) { _message = created.FirstError.Description; return; }
             _username = "";
             _password = "";
             _message = "Admin de empresa creado.";

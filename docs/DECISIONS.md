@@ -316,9 +316,11 @@ handlers ni mediador. Paquetes comprobados en nuget.org el 2026-10-29 (todos MIT
     `.gitignore` del repo.
   - CORS solo en local y solo para el origen del panel, con `--cors` de Core Tools en el `launchSettings.json` de
     la Api. En Static Web Apps no hace falta.
-- Pendiente para el paso 4: el cliente HTTP del panel nuevo devuelve los fallos de negocio de la Api (4xx con
-  ProblemDetails) como `ErrorOr` (regla de `blazor.md`). El de Blazor Server sigue lanzando excepciones, ahora con el
-  motivo de la Api como mensaje: pasarlo a `ErrorOr` cambiaría 9 métodos y todas las páginas sin cambiar lo que se ve.
+- Cliente HTTP del panel (paso 4c, regla de `blazor.md`): cada método devuelve `ErrorOr<T>`. Un 4xx que no sea 401
+  pasa a `Error` con el `code` y el `detail` del ProblemDetails de la Api (404 → `NotFound`, 409 → `Conflict`,
+  403 → `Forbidden`, el resto → `Validation`); si no hay cuerpo, un texto genérico. 401, 5xx y fallos de red siguen
+  siendo excepciones: el 401 ya cierra la sesión en `AdminApiAuthHandler` y un 5xx no es una regla de negocio. Se
+  hizo en un paso aparte del 4b para no mezclar el cambio de plataforma con el de los errores.
 
 **Alternativas descartadas**
 

@@ -80,11 +80,14 @@ else
             }
             else
             {
-                var orgs = await Api.GetOrganizationsAsync() ?? [];
-                _orgNames = orgs.ToDictionary(o => o.Id, o => o.Name);
+                var orgs = await Api.GetOrganizationsAsync();
+                if (orgs.IsError) { _error = orgs.FirstError.Description; return; }
+                _orgNames = orgs.Value.ToDictionary(o => o.Id, o => o.Name);
             }
 
-            _pois = await Api.GetPoisAsync(_orgFilter) ?? [];
+            var pois = await Api.GetPoisAsync(_orgFilter);
+            if (pois.IsError) { _error = pois.FirstError.Description; return; }
+            _pois = pois.Value;
         }
         catch (Exception ex) { _error = ex.Message; }
     }

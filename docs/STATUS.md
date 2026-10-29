@@ -51,7 +51,7 @@ Lo cerrado hasta la fase 11 está en `docs/historia.md`.
   - [x] Móvil de verdad (2026-10-29): por USB con `adb reverse tcp:5263 tcp:5263` y la app apuntando a
     `http://127.0.0.1:5263/` solo para la prueba. El autor colocó un POI de `DEMO01` cerca desde el panel, se unió
     desde la app, capturó (100 puntos en la BD) y sale en el ranking de las Functions.
-- [ ] Paso 4 — Panel → WebAssembly, partido en 4a (búsqueda de lugares en la Api), 4b (WebAssembly con token en
+- [x] Paso 4 — Panel → WebAssembly (2026-10-29), partido en 4a (búsqueda de lugares en la Api), 4b (WebAssembly con token en
   `localStorage`) y 4c (cliente HTTP con `ErrorOr`).
   - [x] 4a (2026-10-29): `GET /api/places?q=` (`PlacesFunctions`, solo admins) busca en Nominatim a través de
     `NominatimClient`: User-Agent con la URL del repo, una petición por segundo como mucho, sin reintentos
@@ -75,7 +75,12 @@ Lo cerrado hasta la fase 11 está en `docs/historia.md`.
     - El autor en el panel: login con los dos roles (y fallido), crear actividad, colocar POIs (también buscando un
       lugar), QR, directo, sesión que sobrevive a cerrar la pestaña, «Salir» y vuelta a la página pedida tras el
       login.
-  - [ ] 4c: cliente HTTP del panel con `ErrorOr`.
+  - [x] 4c (2026-10-29): `AdminApiClient` devuelve `ErrorOr<T>` (D21, `blazor.md`): un 4xx que no sea 401 llega
+    como error con el código y el motivo de la Api; 401, 5xx y fallos de red siguen siendo excepciones. Las 26
+    llamadas de las páginas enseñan `FirstError.Description`.
+    Validado en local por el autor: contraseña corta, usuario repetido, actividad inexistente («Actividad no
+    encontrada.»), login fallido y un repaso de actividades, POIs, búsqueda y directo.
+- [ ] Paso 5 — Despliegue (antes, propuesta de cómo partirlo).
 
 Para el paso 5: las tablas de Supabase se crearon sin migraciones. Hay que comprobar que su esquema coincide con
 `InitialCreate` y marcarla como aplicada antes del primer `database update`.
