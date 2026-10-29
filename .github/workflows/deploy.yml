@@ -1,0 +1,54 @@
+# Despliegue a la nube (fase 12, D20): migraciones en Supabase y, desde el paso 5b, Static Web Apps.
+#
+# Secrets (GitHub → Settings → Secrets):
+#   SUPABASE_DB_URL — connection string del session pooler (el mismo que usa el keepalive)
+
+name: Despliegue
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy
+  cancel-in-progress: false
+
+jobs:
+  migrate:
+    name: Migraciones en Supabase
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: .NET (versión de global.json)
+        uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+
+      - name: Herramientas (dotnet-ef y psql)
+        run: |
+          dotnet tool install --global dotnet-ef --version 10.0.8
+          sudo apt-get update && sudo apt-get install -y postgresql-client
+
+      - name: Script de migraciones (idempotente)
+        env:
+          # EF construye la Api para leer el modelo; no se conecta a ninguna base de datos.
+          ConnectionStrings__gincanahud: "Host=unused;Database=unused"
+        run: |
+          dotnet build src/GincanaHud.Api
+          dotnet ef migrations script --idempotent --no-build --project src/GincanaHud.Api -o migrate.sql
+          sed -i '1s/^\xEF\xBB\xBF//' migrate.sql
+
+      - name: Conexión a Supabase
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: python3 .github/scripts/pg_env.py
+
+      - name: Aplicar migraciones
+        run: |
+          psql -v ON_ERROR_STOP=1 -f migrate.sql
+          psql -c 'select "MigrationId" from "__EFMigrationsHistory" order by "MigrationId"'
