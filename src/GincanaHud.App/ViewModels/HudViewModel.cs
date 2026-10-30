@@ -53,6 +53,7 @@ public sealed class HudViewModel : ObservableObject, IDisposable
 	private string _targetClue = "Objetivo de prueba.";
 	private Guid? _activityId;
 	private Guid? _poiId;
+	private Guid? _proximityNotifiedPoiId;
 	private Guid? _userId;
 	private bool _useApiCapture;
 	private bool _serverConfirmed;
@@ -714,8 +715,6 @@ public sealed class HudViewModel : ObservableObject, IDisposable
 			var distance = DistanceMeters ?? ProximityMeters;
 			var speed = 1.0 + Math.Clamp((ProximityMeters - distance) / ProximityMeters, 0, 1) * 3.0;
 			Pulse = (Pulse + 0.05 * speed) % 1.0;
-			if (IsInProximity && !IsLocked)
-				_captureFx.TickProximity(distance);
 		}
 
 		PushFrame();
@@ -760,6 +759,13 @@ public sealed class HudViewModel : ObservableObject, IDisposable
 		}
 
 		IsInProximity = distance < ProximityMeters;
+		// Once per POI: GPS jitter around 15 m must not buzz again.
+		if (IsInProximity && _poiId != _proximityNotifiedPoiId)
+		{
+			_proximityNotifiedPoiId = _poiId;
+			_captureFx.NotifyProximity();
+		}
+
 		var withinRadius = distance <= _targetRadiusMeters;
 		var aligned = Math.Abs(RelativeBearingDegrees) <= LockAngleDegrees;
 		var locked = withinRadius && aligned && HeadingDegrees is not null;
