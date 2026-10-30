@@ -49,7 +49,7 @@ Lo cerrado hasta la fase 11 y la fase 13 están en `docs/historia.md`.
     Validado: en local, 0 avisos y 93 tests en verde (10 nuevos en `OrganizationScopeTests` y
     `FunctionAuthorizationTests`: otra organización no edita, ni añade, edita o quita POIs, ni ve el directo, ni
     crea; la propia y el SuperAdmin sí editan; las listas se restringen).
-- [ ] Paso c — identidad del jugador (D25). Código hecho, falta la prueba en el móvil contra la nube.
+- [x] Paso c — identidad del jugador (D25), 2026-10-30.
   - `JoinActivityHandler` crea un jugador nuevo en cada unión; reutiliza el de `JoinActivityRequest.UserId` solo
     si ya está en esa actividad. Un nombre que ya está en la partida → 409 `Player.NameTaken`.
   - El ranking anónimo solo lleva el id de quien pregunta (`?userId=`); el panel, todos.
@@ -57,7 +57,13 @@ Lo cerrado hasta la fase 11 y la fase 13 están en `docs/historia.md`.
     actividad») y pide el ranking con su id.
   Validado: en local, 0 avisos y 95 tests en verde (nombre repetido, reincorporarse con el id conserva las
   capturas, mismo nombre en otra actividad es otro jugador, ranking de la app con solo el id propio); la app
-  compila con 0 avisos.
+  compila con 0 avisos. En el móvil contra la nube (despliegue desde `main` tras la PR #19, en verde), en una
+  actividad de prueba con un POI: un nombre que ya estaba (jugador creado antes con la Api) da el aviso; con un
+  nombre libre se une, la captura del POI llega al final con su fila resaltada en el ranking; «Salir de la
+  actividad» conserva el id y volver a unirse con el mismo nombre recupera el mismo jugador con la meta hecha.
+  Visto de paso en el móvil (pendiente, sin paso asignado): el aviso de error sale debajo del botón y hay que
+  bajar para leerlo entero; en el podio del final, el nombre del #2 no se lee; tras salir desde la pantalla
+  final, Unirse sigue diciendo «Listo… Arrancando…».
 - [ ] Paso d — panel: jugadores por actividad y QR.
 - [ ] Paso e — vibrar al acercarse.
 - [ ] Paso f — despliegue y prueba final.
@@ -174,7 +180,8 @@ Lo cerrado hasta la fase 11 y la fase 13 están en `docs/historia.md`.
     mostraba consumo (llega con uno o dos días de retraso). Mirar a principios de noviembre.
 - El keepalive diario pasa en verde (último: 2026-10-29) con los tres secretos configurados.
 - En Supabase quedan usuarios de prueba creados con curl («Prueba nube», «Prueba nube 2», «Prueba chunked»,
-  «Prueba Aspire 13.6»).
+  «Prueba Aspire 13.6»), y los del paso c de la fase 14 («Prueba repetido», «Prueba movil»). Se borran en el
+  paso f.
 - Aspire 13.6.4 (2026-10-29): sin paquetes vulnerables (MessagePack 2.5.307); `ASPIRE010` silenciado en el AppHost.
   Probado en local (arranque, salud, unirse a `DEMO01`, panel) y en la nube (despliegue, salud, unirse).
 
