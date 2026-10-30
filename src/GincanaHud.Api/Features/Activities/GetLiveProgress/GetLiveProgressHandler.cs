@@ -1,4 +1,5 @@
 using ErrorOr;
+using GincanaHud.Api.Common.Http;
 using GincanaHud.Api.Common.Messaging;
 using GincanaHud.Api.Data;
 using GincanaHud.Shared;
@@ -18,7 +19,7 @@ public sealed class GetLiveProgressHandler(AppDbContext db)
 			.ThenInclude(ap => ap.Poi)
 			.FirstOrDefaultAsync(a => a.Id == request.ActivityId, cancellationToken);
 
-		if (activity is null)
+		if (activity is null || request.OrganizationScope.Excludes(activity.OrganizationId))
 			return Error.NotFound(code: "Activity.NotFound", description: "Actividad no encontrada.");
 
 		var pois = activity.Pois

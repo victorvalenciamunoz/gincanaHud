@@ -461,3 +461,13 @@ lista está en `STATUS.md`.
   persona. La app guarda lo que teclea el jugador, no lo que contesta el servidor.
 - Un test recorre todas las funciones y falla si alguna nueva queda anónima sin estar en la lista de las que deben
   serlo (`FunctionAuthorizationTests`).
+
+**Cómo se hizo el paso b2** (técnico, 2026-10-30)
+
+- Cada orden del panel que toca una actividad lleva `OrganizationScope` (la organización del token, o `null` para
+  el SuperAdmin), y el handler la compara con la de la actividad (`Excludes`). Se comprueba en el handler, no en
+  la función, para que lo cubran los tests contra Postgres.
+- Crear una actividad o un POI para otra organización da 403: la organización la manda el panel en el cuerpo y no
+  hay nada que ocultar. Leer o cambiar algo de otra da «no encontrada», como en b1.
+- En las listas de POIs y jugadores, la organización del token sustituye a la que pide el panel
+  (`AdminScope.Restrict`): un admin no puede pedir la de otro.

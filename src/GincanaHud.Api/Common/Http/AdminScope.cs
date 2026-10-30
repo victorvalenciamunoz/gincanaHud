@@ -21,4 +21,10 @@ public static class AdminScope
 		var claim = user.FindFirst(AdminJwtTokenService.OrganizationIdClaimType)?.Value;
 		return Guid.TryParse(claim, out var organizationId) ? organizationId : Guid.Empty;
 	}
+
+	/// <summary>The organization a list shows: the caller's own, or the one the SuperAdmin asked for.</summary>
+	public static Guid? Restrict(HttpRequest req, Guid? requested) => OrganizationOf(req) ?? requested;
+
+	/// <summary>True when the caller is limited to an organization other than <paramref name="organizationId"/>.</summary>
+	public static bool Excludes(this Guid? scope, Guid organizationId) => scope is Guid own && own != organizationId;
 }

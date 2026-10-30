@@ -4,5 +4,5 @@ using GincanaHud.Shared;
 
 namespace GincanaHud.Api.Features.Activities.AddActivityPoi;
 
-public sealed record AddActivityPoiCommand(Guid ActivityId, CreatePoiRequest Request)
+public sealed record AddActivityPoiCommand(Guid ActivityId, CreatePoiRequest Request, Guid? OrganizationScope = null)
 	: IRequest<ErrorOr<ActivityPoiDto>>;

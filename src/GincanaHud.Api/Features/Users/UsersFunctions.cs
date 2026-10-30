@@ -18,7 +18,7 @@ public sealed class UsersFunctions(ISender sender)
 		CancellationToken ct)
 	{
 		Guid? organizationId = Guid.TryParse(req.Query["organizationId"], out var value) ? value : null;
-		var result = await sender.Send(new ListUsersQuery(organizationId), ct);
+		var result = await sender.Send(new ListUsersQuery(AdminScope.Restrict(req, organizationId)), ct);
 		return result.ToHttpResult();
 	}
 

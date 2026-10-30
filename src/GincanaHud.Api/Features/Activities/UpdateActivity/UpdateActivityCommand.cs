@@ -11,4 +11,5 @@ public sealed record UpdateActivityCommand(
 	bool IsActive,
 	DateTimeOffset StartsAt,
 	DateTimeOffset EndsAt,
-	ActivityRouteMode RouteMode = ActivityRouteMode.Sequential) : IRequest<ErrorOr<ActivitySummaryDto>>;
+	ActivityRouteMode RouteMode = ActivityRouteMode.Sequential,
+	Guid? OrganizationScope = null) : IRequest<ErrorOr<ActivitySummaryDto>>;

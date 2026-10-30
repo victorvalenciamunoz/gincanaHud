@@ -17,7 +17,7 @@ public sealed class PoisFunctions(ISender sender)
 		CancellationToken ct)
 	{
 		Guid? organizationId = Guid.TryParse(req.Query["organizationId"], out var value) ? value : null;
-		var result = await sender.Send(new ListPoisQuery(organizationId), ct);
+		var result = await sender.Send(new ListPoisQuery(AdminScope.Restrict(req, organizationId)), ct);
 		return result.ToHttpResult();
 	}
 
@@ -34,7 +34,8 @@ public sealed class PoisFunctions(ISender sender)
 				body.Longitude,
 				body.RadiusMeters,
 				body.Clue,
-				body.Points), ct);
+				body.Points,
+				AdminScope.OrganizationOf(req)), ct);
 			return result.ToHttpResult(poi => Results.Created($"/api/pois/{poi.Id}", poi));
 		}, ct);
 }

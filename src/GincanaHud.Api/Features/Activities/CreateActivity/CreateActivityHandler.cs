@@ -1,4 +1,5 @@
 using ErrorOr;
+using GincanaHud.Api.Common.Http;
 using GincanaHud.Api.Common.Messaging;
 using GincanaHud.Api.Data;
 using GincanaHud.Api.Domain.Activities;
@@ -14,6 +15,9 @@ public sealed class CreateActivityHandler(AppDbContext db)
 		CreateActivityCommand request,
 		CancellationToken cancellationToken)
 	{
+		if (request.OrganizationScope.Excludes(request.OrganizationId))
+			return Error.Forbidden(code: "Organization.Forbidden", description: "No puedes crear actividades de otra organización.");
+
 		var org = await db.Organizations.AsNoTracking()
 			.FirstOrDefaultAsync(o => o.Id == request.OrganizationId, cancellationToken);
 		if (org is null)

@@ -124,7 +124,8 @@ public sealed class ActivitiesFunctions(ISender sender)
 				body.Description,
 				body.StartsAt,
 				body.EndsAt,
-				body.RouteMode), ct);
+				body.RouteMode,
+				AdminScope.OrganizationOf(req)), ct);
 			return result.ToHttpResult(a => Results.Created($"/api/activities/{a.Id}", a));
 		}, ct);
 
@@ -138,7 +139,8 @@ public sealed class ActivitiesFunctions(ISender sender)
 		{
 			var result = await sender.Send(
 				new UpdateActivityCommand(
-					id, body.Title, body.Description, body.IsActive, body.StartsAt, body.EndsAt, body.RouteMode), ct);
+					id, body.Title, body.Description, body.IsActive, body.StartsAt, body.EndsAt, body.RouteMode,
+					AdminScope.OrganizationOf(req)), ct);
 			return result.ToHttpResult();
 		}, ct);
 
@@ -150,7 +152,7 @@ public sealed class ActivitiesFunctions(ISender sender)
 		CancellationToken ct) =>
 		req.WithJsonBodyAsync<CreatePoiRequest>(async body =>
 		{
-			var result = await sender.Send(new AddActivityPoiCommand(id, body), ct);
+			var result = await sender.Send(new AddActivityPoiCommand(id, body, AdminScope.OrganizationOf(req)), ct);
 			return result.ToHttpResult(p => Results.Created($"/api/activities/{id}/pois/{p.PoiId}", p));
 		}, ct);
 
@@ -163,7 +165,7 @@ public sealed class ActivitiesFunctions(ISender sender)
 		CancellationToken ct) =>
 		req.WithJsonBodyAsync<UpdateActivityPoiRequest>(async body =>
 		{
-			var result = await sender.Send(new UpdateActivityPoiCommand(id, poiId, body), ct);
+			var result = await sender.Send(new UpdateActivityPoiCommand(id, poiId, body, AdminScope.OrganizationOf(req)), ct);
 			return result.ToHttpResult();
 		}, ct);
 
@@ -175,7 +177,7 @@ public sealed class ActivitiesFunctions(ISender sender)
 		Guid poiId,
 		CancellationToken ct)
 	{
-		var result = await sender.Send(new RemoveActivityPoiCommand(id, poiId), ct);
+		var result = await sender.Send(new RemoveActivityPoiCommand(id, poiId, AdminScope.OrganizationOf(req)), ct);
 		return result.ToHttpResult(_ => Results.NoContent());
 	}
 
@@ -186,7 +188,7 @@ public sealed class ActivitiesFunctions(ISender sender)
 		Guid id,
 		CancellationToken ct)
 	{
-		var result = await sender.Send(new GetLiveProgressQuery(id), ct);
+		var result = await sender.Send(new GetLiveProgressQuery(id, AdminScope.OrganizationOf(req)), ct);
 		return result.ToHttpResult();
 	}
 }
