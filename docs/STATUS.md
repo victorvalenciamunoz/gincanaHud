@@ -74,7 +74,11 @@ Lo cerrado hasta la fase 11 y la fase 13 están en `docs/historia.md`.
     lleva capturas, participación y contacto; borrar todos solo toca esa actividad; otra organización no borra
     nada; el SuperAdmin sí; un jugador de otra actividad no se encuentra; uno de antes de D25 conserva su otra
     actividad); la app compila con 0 avisos.
-  - [ ] d2 — descargar el QR en PNG, copiar el código y «Evento» → «Actividad» en el panel.
+  - [ ] d2 — QR y código. Código hecho, falta que el autor lo pruebe en el panel. En el detalle de la actividad,
+    junto al QR: «Copiar código», «Copiar invitación» (`JoinInvitation`, texto corto para WhatsApp o email) y
+    «Descargar QR (PNG)» de unos 1200 px para carteles. «Evento» pasa a «Actividad» en la lista y el detalle.
+    Validado: en local, 0 avisos y 103 tests en verde (2 nuevos en `JoinMaterialTests`: el PNG descargado mide
+    más de 1000 px y la invitación lleva el título y el código en mayúsculas).
 - [ ] Paso e — vibrar al acercarse.
 - [ ] Paso f — despliegue y prueba final.
 

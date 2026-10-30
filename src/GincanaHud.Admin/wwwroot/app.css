@@ -382,6 +382,15 @@ a { color: #7CFFB2; }
     max-width: 40rem;
 }
 .join-code-line { margin: 0.5rem 0; font-size: 1.1rem; }
+.join-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.75rem; }
+.join-copied { margin: 0.5rem 0 0; color: #7CFFB2; }
+a.button-link {
+    display: inline-block;
+    background: #334155; color: #fff; border-radius: 6px;
+    padding: 0.45rem 0.9rem;
+    text-decoration: none;
+}
+a.button-link:hover { background: #475569; }
 .join-code { font-size: 1.35rem; letter-spacing: 0.08em; color: #7CFFB2; }
 .join-qr {
     background: #fff;
