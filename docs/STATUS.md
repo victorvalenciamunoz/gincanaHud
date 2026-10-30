@@ -7,11 +7,30 @@ Lo cerrado hasta la fase 11 y la fase 13 están en `docs/historia.md`.
 
 ## Fase 14 — en marcha
 
-- [ ] Paso a — repaso de la visión (sin código).
-- [ ] Paso b — identidad del jugador.
-- [ ] Paso c — jugadores por actividad.
-- [ ] Paso d — despliegue y prueba final. Hasta entonces, la nube no exige el orden secuencial (último despliegue:
-  2026-10-29, antes de la PR #13).
+- [x] Paso a — repaso de la visión (2026-10-30), sin código; decisiones del autor en D24.
+  - **Cumple:** unirse por código o QR (`ScanPage`); HUD con distancia y dirección; captura validada en el servidor
+    por radio y horario (tests de la fase 13); juego sin cobertura (`ActivityRouteCache`, `CaptureQueue`); ruta
+    secuencial y libre (`HudViewModel.PickNextPoi`); actividades con horario; POIs en el mapa con búsqueda de
+    lugares; directo y ranking con contacto en el panel; organizaciones y admins creados por el SuperAdmin.
+  - **Falta:**
+    - Sin sesión salen los contactos: `GET /api/activities` (anónima, de todas las organizaciones) da los ids, y
+      `GET /api/activities/{id}/ranking` (anónima) trae correo y teléfono. En la nube, el 2026-10-30, una
+      actividad y una fila sin contacto: no se ha filtrado nada aún. → paso b.
+    - La Api no separa organizaciones: nadie lee `org_id` del token; solo el panel filtra lo que enseña. →
+      paso b.
+    - Limpiar jugadores por actividad: solo el SuperAdmin, y `ClearPlayersHandler` borra los de todas. → paso d.
+    - Dos jugadores con el mismo nombre son uno. → paso c.
+    - El QR del panel solo se ve; no se descarga ni se copia el código. → paso d.
+    - El aviso a 15 m es solo visual (HUD en ámbar). → paso e.
+    - La nube no exige el orden secuencial: último despliegue el 2026-10-29, antes de la PR #13. → paso b
+      (despliegue).
+  - **Contradicción resuelta:** `CLAUDE.md` decía que las pistas no llegan hasta capturar, y el HUD enseña la del
+    POI al que vas. El autor decide que una pista es una ayuda para encontrarlo: se corrige el principio (D24).
+- [ ] Paso b — privacidad y permisos (se despliega al cerrarlo).
+- [ ] Paso c — identidad del jugador.
+- [ ] Paso d — panel: jugadores por actividad y QR.
+- [ ] Paso e — vibrar al acercarse.
+- [ ] Paso f — despliegue y prueba final.
 
 ## Fase 12 — cerrada salvo la factura
 
