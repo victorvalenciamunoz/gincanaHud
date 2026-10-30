@@ -1,10 +1,17 @@
 # Estado
 
-**Fase:** ninguna en marcha. La 13 (tests y CI) se cerró el 2026-10-30; la 12 solo espera la factura de octubre.
-`PLAN.md` no tiene fase siguiente.
+**Fase:** 14 — Pulido final (la 12 solo espera la factura de octubre)
 **Actualizado:** 2026-10-30
 
 Lo cerrado hasta la fase 11 y la fase 13 están en `docs/historia.md`.
+
+## Fase 14 — en marcha
+
+- [ ] Paso a — repaso de la visión (sin código).
+- [ ] Paso b — identidad del jugador.
+- [ ] Paso c — jugadores por actividad.
+- [ ] Paso d — despliegue y prueba final. Hasta entonces, la nube no exige el orden secuencial (último despliegue:
+  2026-10-29, antes de la PR #13).
 
 ## Fase 12 — cerrada salvo la factura
 

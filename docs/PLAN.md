@@ -1,6 +1,6 @@
 # Plan
 
-**Fase actual: 13** (la 12 solo espera la factura de octubre de Azure)
+**Fase actual: 14** (la 12 solo espera la factura de octubre de Azure)
 
 ---
 
@@ -62,3 +62,30 @@ poder cambiar el código sin miedo y que una PR en rojo no se pueda fusionar.
   *Bueno cuando:* corren en el CI.
 
 **Juez:** el CI corre en cada PR con los tres grupos de tests, y `main` no acepta una PR en rojo.
+
+## Fase 14 — Pulido final
+
+El proyecto casi cumple la visión, pero un repaso rápido (2026-10-30) encontró un requisito sin cumplir: el admin
+de organización no puede limpiar los jugadores de su actividad; solo el SuperAdmin, y borra los de todas. Y un
+riesgo: unirse reconoce al jugador por el nombre en toda la base de datos, así que dos «Ana» en la misma fiesta
+serían un solo jugador. Además, el cambio del orden secuencial (fase 13) no está desplegado. Se quiere poder dar el
+proyecto por terminado, a falta de ideas nuevas.
+
+- **Paso a — Repaso de la visión (sin código).** Cada requisito de `VISION.md` contra el código y la nube: cumple
+  (dónde) o falta (qué). Lo que falte se añade como paso de esta fase o sale de alcance, siempre con el autor.
+  *Bueno cuando:* la lista está en `STATUS.md` y el autor ha decidido qué entra.
+- **Paso b — Identidad del jugador.** Al empezar, el autor elige el modelo (por ejemplo, un jugador por actividad
+  en vez de uno global por nombre); puede pedir una migración.
+  *Bueno cuando:* dos jugadores con el mismo nombre en la misma actividad capturan y puntúan por separado (test de
+  handler contra Postgres), y la app sigue uniéndose y recuperando su sesión.
+- **Paso c — Jugadores por actividad.** El admin de organización ve y limpia, desde el panel, los jugadores de
+  una actividad de su organización: capturas, participación y su contacto (datos personales mínimos). Qué queda
+  para el SuperAdmin se decide al empezar.
+  *Bueno cuando:* tests de que un admin limpia solo lo suyo (otra organización → 403) y el autor lo prueba en el
+  panel.
+- **Paso d — Despliegue y prueba final.** Workflow `Despliegue` (con migraciones si el paso b las trae), fuera los
+  jugadores de prueba de Supabase y una actividad de prueba jugada desde el móvil contra la nube.
+  *Bueno cuando:* se cumple el juez.
+
+**Juez:** cada requisito de `VISION.md` cumple o ha salido de alcance con una decisión del autor, y desde el móvil,
+contra la nube, una actividad de prueba completa (unirse, capturar en orden, ranking, limpiar jugadores) funciona.
