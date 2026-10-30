@@ -10,7 +10,7 @@ namespace GincanaHud.Api.Features.Activities.GetLiveProgress;
 
 
 
-public sealed record GetLiveProgressQuery(Guid ActivityId)
+public sealed record GetLiveProgressQuery(Guid ActivityId, Guid? OrganizationScope = null)
 
 	: IRequest<ErrorOr<LiveProgressDto>>;
 

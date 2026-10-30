@@ -1,4 +1,5 @@
 using ErrorOr;
+using GincanaHud.Api.Common.Http;
 using GincanaHud.Api.Common.Messaging;
 using GincanaHud.Api.Data;
 using GincanaHud.Shared;
@@ -16,7 +17,7 @@ public sealed class GetRankingHandler(AppDbContext db)
 		var activity = await db.Activities.AsNoTracking()
 			.Include(a => a.Pois)
 			.FirstOrDefaultAsync(a => a.Id == request.ActivityId, cancellationToken);
-		if (activity is null || (request.OrganizationId is Guid org && activity.OrganizationId != org))
+		if (activity is null || request.OrganizationId.Excludes(activity.OrganizationId))
 			return Error.NotFound(code: "Activity.NotFound", description: "Actividad no encontrada.");
 
 		var poiTotal = activity.Pois.Count;

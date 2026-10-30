@@ -35,8 +35,20 @@ Lo cerrado hasta la fase 11 y la fase 13 están en `docs/historia.md`.
     función nueva queda anónima sin estar en la lista.
     Validado: en local, 0 avisos y 83 tests en verde (10 nuevos: ranking sin contactos, con contactos para su
     organización, otra organización, lista por organización y para el SuperAdmin, unirse sin el contacto
-    guardado, funciones anónimas y `AdminScope`). Nube: pendiente del despliegue.
-  - [ ] b2 — la Api separa organizaciones en el resto de endpoints del panel (directo, jugadores, POIs, editar).
+    guardado, funciones anónimas y `AdminScope`). En la nube (despliegue desde `main` tras la PR #17, en verde),
+    sin sesión: lista de actividades, alta de jugador y ranking con contactos → 401; salud 200; código
+    inexistente 404. El ranking anónimo no se puede mirar desde fuera porque sin sesión ya no hay forma de sacar
+    el id de una actividad. Con este despliegue la nube exige también el orden secuencial. Falta que el autor
+    vea en el panel que el ranking sigue enseñando el contacto.
+  - [x] b2 — la Api separa organizaciones (2026-10-30). Los endpoints del panel pasan la organización del token
+    (`AdminScope`) a sus órdenes: editar actividad, añadir, editar y quitar POI de una actividad y el directo
+    contestan «no encontrada» si la actividad es de otra organización; crear actividad o POI en otra, 403. En
+    las listas de POIs y jugadores manda la organización del token sobre la que pida el panel
+    (`AdminScope.Restrict`); el SuperAdmin sigue viéndolo todo. El alta de jugadores (`UpsertUser`) no es de
+    ninguna organización: queda para el paso c.
+    Validado: en local, 0 avisos y 93 tests en verde (10 nuevos en `OrganizationScopeTests` y
+    `FunctionAuthorizationTests`: otra organización no edita, ni añade, edita o quita POIs, ni ve el directo, ni
+    crea; la propia y el SuperAdmin sí editan; las listas se restringen).
 - [ ] Paso c — identidad del jugador.
 - [ ] Paso d — panel: jugadores por actividad y QR.
 - [ ] Paso e — vibrar al acercarse.

@@ -7,4 +7,5 @@ namespace GincanaHud.Api.Features.Activities.UpdateActivityPoi;
 public sealed record UpdateActivityPoiCommand(
 	Guid ActivityId,
 	Guid PoiId,
-	UpdateActivityPoiRequest Request) : IRequest<ErrorOr<ActivityPoiDto>>;
+	UpdateActivityPoiRequest Request,
+	Guid? OrganizationScope = null) : IRequest<ErrorOr<ActivityPoiDto>>;

@@ -11,4 +11,5 @@ public sealed record CreatePoiCommand(
 	double Longitude,
 	double RadiusMeters,
 	string Clue,
-	int Points) : IRequest<ErrorOr<PoiDto>>;
+	int Points,
+	Guid? OrganizationScope = null) : IRequest<ErrorOr<PoiDto>>;

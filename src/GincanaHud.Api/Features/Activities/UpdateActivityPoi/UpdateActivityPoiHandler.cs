@@ -1,4 +1,5 @@
 using ErrorOr;
+using GincanaHud.Api.Common.Http;
 using GincanaHud.Api.Common.Messaging;
 using GincanaHud.Api.Data;
 using GincanaHud.Shared;
@@ -20,7 +21,7 @@ public sealed class UpdateActivityPoiHandler(AppDbContext db)
 				ap => ap.ActivityId == request.ActivityId && ap.PoiId == request.PoiId,
 				cancellationToken);
 
-		if (link is null)
+		if (link is null || request.OrganizationScope.Excludes(link.Activity.OrganizationId))
 			return Error.NotFound(code: "ActivityPoi.NotFound", description: "POI no pertenece a la actividad.");
 
 		var body = request.Request;

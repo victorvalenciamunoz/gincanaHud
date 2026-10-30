@@ -1,4 +1,5 @@
 using ErrorOr;
+using GincanaHud.Api.Common.Http;
 using GincanaHud.Api.Common.Messaging;
 using GincanaHud.Api.Data;
 using GincanaHud.Api.Domain.Pois;
@@ -17,7 +18,7 @@ public sealed class AddActivityPoiHandler(AppDbContext db)
 		var activity = await db.Activities
 			.Include(a => a.Pois)
 			.FirstOrDefaultAsync(a => a.Id == request.ActivityId, cancellationToken);
-		if (activity is null)
+		if (activity is null || request.OrganizationScope.Excludes(activity.OrganizationId))
 			return Error.NotFound(code: "Activity.NotFound", description: "Actividad no encontrada.");
 
 		var nextOrder = activity.Pois.Count == 0 ? 0 : activity.Pois.Max(p => p.Order);

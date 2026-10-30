@@ -63,4 +63,21 @@ public class FunctionAuthorizationTests
 	[Fact]
 	public void An_organization_admin_without_organization_sees_nothing() =>
 		Assert.Equal(Guid.Empty, AdminScope.OrganizationOf(RequestAs("OrganizationAdmin")));
+
+	[Fact]
+	public void An_organization_admin_cannot_list_another_organization()
+	{
+		var own = Guid.NewGuid();
+
+		Assert.Equal(own, AdminScope.Restrict(RequestAs("OrganizationAdmin", own.ToString()), requested: Guid.NewGuid()));
+	}
+
+	[Fact]
+	public void The_super_admin_lists_what_it_asks_for()
+	{
+		var requested = Guid.NewGuid();
+
+		Assert.Equal(requested, AdminScope.Restrict(RequestAs("SuperAdmin"), requested));
+		Assert.Null(AdminScope.Restrict(RequestAs("SuperAdmin"), requested: null));
+	}
 }

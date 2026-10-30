@@ -1,4 +1,5 @@
 using ErrorOr;
+using GincanaHud.Api.Common.Http;
 using GincanaHud.Api.Common.Messaging;
 using GincanaHud.Api.Data;
 using GincanaHud.Shared;
@@ -16,7 +17,7 @@ public sealed class UpdateActivityHandler(AppDbContext db)
 		var activity = await db.Activities
 			.Include(a => a.Organization)
 			.FirstOrDefaultAsync(a => a.Id == request.Id, cancellationToken);
-		if (activity is null)
+		if (activity is null || request.OrganizationScope.Excludes(activity.OrganizationId))
 			return Error.NotFound(code: "Activity.NotFound", description: "Actividad no encontrada.");
 
 		var updated = activity.Update(

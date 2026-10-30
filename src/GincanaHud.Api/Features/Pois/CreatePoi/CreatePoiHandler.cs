@@ -1,4 +1,5 @@
 using ErrorOr;
+using GincanaHud.Api.Common.Http;
 using GincanaHud.Api.Common.Messaging;
 using GincanaHud.Api.Data;
 using GincanaHud.Api.Domain.Pois;
@@ -12,7 +13,10 @@ public sealed class CreatePoiHandler(AppDbContext db)
 {
 	public async Task<ErrorOr<PoiDto>> Handle(CreatePoiCommand request, CancellationToken cancellationToken)
 	{
-		var orgExists = await db.Organizations.AnyAsync(o => o.Id == request.OrganizationId, cancellationToken);
+		if (request.OrganizationScope.Excludes(request.OrganizationId))
+			return Error.Forbidden(code: "Organization.Forbidden", description: "No puedes crear POIs de otra organización.");
+
+		var orgExists =await db.Organizations.AnyAsync(o => o.Id == request.OrganizationId, cancellationToken);
 		if (!orgExists)
 			return Error.NotFound(code: "Organization.NotFound", description: "Organización no encontrada.");
 
