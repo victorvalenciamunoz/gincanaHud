@@ -1,0 +1,1 @@
+{"type":"https://tools.ietf.org/html/rfc9110#section-15.5.5","title":"Activity.NotFound","status":404,"detail":"No hay actividad con ese código.","instance":"/api/activities/by-code/ZZZ0001","code":"Activity.NotFound","traceId":"0HNPMEQRAVTBO:00000001"}

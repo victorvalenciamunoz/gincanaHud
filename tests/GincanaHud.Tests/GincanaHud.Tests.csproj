@@ -17,6 +17,11 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\GincanaHud.Api\GincanaHud.Api.csproj" />
+    <ProjectReference Include="..\..\src\GincanaHud.Admin\GincanaHud.Admin.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="Panel\Fixtures\*.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
   <ItemGroup>
