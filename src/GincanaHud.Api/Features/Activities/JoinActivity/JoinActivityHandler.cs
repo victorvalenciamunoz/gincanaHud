@@ -64,8 +64,10 @@ public sealed class JoinActivityHandler(AppDbContext db)
 
 		await db.SaveChangesAsync(cancellationToken);
 
+		// Anonymous answer: the user is found by name, so the stored contact may be someone else's (D24).
+		// The app keeps what the player typed.
 		return new JoinActivityResponse(
-			ActivityDtoMapping.ToUserDto(user),
+			ActivityDtoMapping.ToUserDto(user) with { ContactEmail = null, ContactPhone = null },
 			ActivityDtoMapping.ToSummary(activity, activity.Organization.Name));
 	}
 }

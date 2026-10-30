@@ -21,17 +21,19 @@ namespace GincanaHud.Api.Features.Activities;
 
 public sealed class ActivitiesFunctions(ISender sender)
 {
-	// Mobile + Admin reads (anonymous)
+	// Panel only: it hands out every activity id, and the app joins by code (D24).
 	[Function("ListActivities")]
+	[Authorize(Policy = JwtAuthExtensions.AdminPolicy)]
 	public async Task<IResult> List(
 		[HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "activities")] HttpRequest req,
 		CancellationToken ct)
 	{
 		var includeInactive = bool.TryParse(req.Query["includeInactive"], out var value) && value;
-		var result = await sender.Send(new ListActivitiesQuery(includeInactive), ct);
+		var result = await sender.Send(new ListActivitiesQuery(includeInactive, AdminScope.OrganizationOf(req)), ct);
 		return result.ToHttpResult();
 	}
 
+	// Mobile reads (anonymous)
 	[Function("JoinActivity")]
 	public Task<IResult> Join(
 		[HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "activities/join")] HttpRequest req,
@@ -85,6 +87,7 @@ public sealed class ActivitiesFunctions(ISender sender)
 			return result.ToHttpResult();
 		}, ct);
 
+	// The app shows it when the player finishes: no contacts (D24).
 	[Function("GetRanking")]
 	public async Task<IResult> GetRanking(
 		[HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "activities/{id:guid}/ranking")] HttpRequest req,
@@ -92,6 +95,18 @@ public sealed class ActivitiesFunctions(ISender sender)
 		CancellationToken ct)
 	{
 		var result = await sender.Send(new GetRankingQuery(id), ct);
+		return result.ToHttpResult();
+	}
+
+	// The panel's ranking, with contacts for the prizes: only the activity's organization.
+	[Function("GetRankingWithContacts")]
+	[Authorize(Policy = JwtAuthExtensions.AdminPolicy)]
+	public async Task<IResult> GetRankingWithContacts(
+		[HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "activities/{id:guid}/ranking/contacts")] HttpRequest req,
+		Guid id,
+		CancellationToken ct)
+	{
+		var result = await sender.Send(new GetRankingQuery(id, IncludeContacts: true, AdminScope.OrganizationOf(req)), ct);
 		return result.ToHttpResult();
 	}
 

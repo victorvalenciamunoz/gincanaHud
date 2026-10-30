@@ -11,7 +11,7 @@ namespace GincanaHud.Tests.Handlers;
 
 public sealed record SeededPoi(Guid Id, int Order, double Latitude, double Longitude, string Clue, int Points);
 
-public sealed record SeededActivity(Guid Id, string JoinCode, IReadOnlyList<SeededPoi> Pois);
+public sealed record SeededActivity(Guid Id, Guid OrganizationId, string JoinCode, IReadOnlyList<SeededPoi> Pois);
 
 /// <summary>Seeds through the domain, like the panel does. Neutral coordinates around (0, 0): public repo.</summary>
 public static class TestData
@@ -60,15 +60,15 @@ public static class TestData
 		db.Organizations.Add(organization);
 		db.Activities.Add(activity);
 		await db.SaveChangesAsync(ct);
-		return new SeededActivity(activity.Id, activity.JoinCode, pois);
+		return new SeededActivity(activity.Id, organization.Id, activity.JoinCode, pois);
 	}
 
 	/// <summary>A player already joined to the activity (registered at its start, so it also works once expired).</summary>
-	public static async Task<Guid> PlayerAsync(AppDbContext db, Guid activityId, string? name = null)
+	public static async Task<Guid> PlayerAsync(AppDbContext db, Guid activityId, string? name = null, string? email = null)
 	{
 		var ct = TestContext.Current.CancellationToken;
 		var activity = await db.Activities.Include(a => a.Participants).SingleAsync(a => a.Id == activityId, ct);
-		var user = User.Register(name ?? UniqueName()).Value;
+		var user = User.Register(name ?? UniqueName(), email).Value;
 		db.Users.Add(user);
 		activity.RegisterParticipant(user.Id, activity.StartsAt);
 		await db.SaveChangesAsync(ct);

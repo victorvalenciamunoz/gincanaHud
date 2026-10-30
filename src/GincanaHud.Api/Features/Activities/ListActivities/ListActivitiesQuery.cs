@@ -4,5 +4,6 @@ using GincanaHud.Shared;
 
 namespace GincanaHud.Api.Features.Activities.ListActivities;
 
-public sealed record ListActivitiesQuery(bool IncludeInactive)
+/// <param name="OrganizationId">Only this organization's activities; <c>null</c> for all (SuperAdmin).</param>
+public sealed record ListActivitiesQuery(bool IncludeInactive, Guid? OrganizationId = null)
 	: IRequest<ErrorOr<IReadOnlyList<ActivitySummaryDto>>>;

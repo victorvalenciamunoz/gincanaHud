@@ -78,6 +78,26 @@ public class JoinActivityHandlerTests(PostgresFixture postgres)
 	}
 
 	[Fact]
+	public async Task The_answer_does_not_carry_the_stored_contact()
+	{
+		// Players are found by name: whoever types an existing name must not get that player's contact.
+		var name = TestData.UniqueName();
+		SeededActivity activity;
+		await using (var db = postgres.CreateDbContext())
+		{
+			var earlier = await TestData.ActivityAsync(db);
+			await TestData.PlayerAsync(db, earlier.Id, name, "ana@example.com");
+			activity = await TestData.ActivityAsync(db);
+		}
+
+		var result = await JoinAsync(activity.JoinCode, name);
+
+		Assert.False(result.IsError);
+		Assert.Null(result.Value.User.ContactEmail);
+		Assert.Null(result.Value.User.ContactPhone);
+	}
+
+	[Fact]
 	public async Task Joining_twice_with_the_same_name_keeps_one_participant()
 	{
 		SeededActivity activity;
