@@ -2,7 +2,7 @@
 @inject AdminApiClient Api
 
 <PageTitle>Actividades</PageTitle>
-<p class="page-kicker">Eventos</p>
+<p class="page-kicker">Actividades</p>
 <h1>Actividades</h1>
 
 <div class="form-grid">
@@ -31,48 +31,61 @@
         <option value="Sequential">Ruta secuencial</option>
         <option value="Free">Ruta libre (salteada)</option>
     </select>
-    <button @onclick="CreateAsync" disabled="@_busy">Crear evento</button>
+    <button @onclick="CreateAsync" disabled="@_busy">Crear actividad</button>
 </div>
-<p class="page-lead">Secuencial: 1→2→3. Libre: cualquier orden; gana quien complete todos antes. El QR codifica el mismo texto que el código.</p>
+<p class="page-lead">Secuencial: 1→2→3. Libre: cualquier orden; gana quien complete todos antes. El QR codifica el mismo
+    texto que el código.</p>
 
-@if (!string.IsNullOrEmpty(_message))
-{
-    <p>@_message</p>
-}
+    @if (!string.IsNullOrEmpty(_message))
+    {
+        <p>@_message</p>
+    }
 
-@if (_items is null)
-{
-    <p>Cargando…</p>
-}
-else
-{
-    <table>
-        <thead><tr><th>QR</th><th>Título</th><th>Org</th><th>Código</th><th>Modo</th><th>Inicio</th><th>Fin</th><th>Estado</th><th></th></tr></thead>
-        <tbody>
-        @foreach (var a in _items)
-        {
-            <tr>
-                <td>
-                    @if (_qrByCode.TryGetValue(a.JoinCode, out var qr))
-                    {
-                        <a href="@($"/activities/{a.Id}")" title="@a.JoinCode">
-                            <img class="join-qr-thumb" src="@qr" alt="QR @a.JoinCode" width="72" height="72" />
-                        </a>
-                    }
-                </td>
-                <td>@a.Title</td>
-                <td>@(a.OrganizationName ?? "—")</td>
-                <td class="mono">@a.JoinCode</td>
-                <td>@(a.RouteMode == ActivityRouteMode.Free ? "Libre" : "Secuencial")</td>
-                <td>@a.StartsAt.ToLocalTime().ToString("g")</td>
-                <td>@a.EndsAt.ToLocalTime().ToString("g")</td>
-                <td>@(a.IsActive ? "Activa" : "Inactiva")</td>
-                <td><a href="@($"/activities/{a.Id}")">Editar</a></td>
-            </tr>
-        }
-        </tbody>
-    </table>
-}
+    @if (_items is null)
+    {
+        <p>Cargando…</p>
+    }
+    else
+    {
+        <table>
+            <thead>
+                <tr>
+                    <th>QR</th>
+                    <th>Título</th>
+                    <th>Org</th>
+                    <th>Código</th>
+                    <th>Modo</th>
+                    <th>Inicio</th>
+                    <th>Fin</th>
+                    <th>Estado</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var a in _items)
+                {
+                    <tr>
+                        <td>
+                            @if (_qrByCode.TryGetValue(a.JoinCode, out var qr))
+                            {
+                                <a href="@($"/activities/{a.Id}")" title="@a.JoinCode">
+                                    <img class="join-qr-thumb" src="@qr" alt="QR @a.JoinCode" width="72" height="72" />
+                                </a>
+                            }
+                        </td>
+                        <td>@a.Title</td>
+                        <td>@(a.OrganizationName ?? "—")</td>
+                        <td class="mono">@a.JoinCode</td>
+                        <td>@(a.RouteMode == ActivityRouteMode.Free ? "Libre" : "Secuencial")</td>
+                        <td>@a.StartsAt.ToLocalTime().ToString("g")</td>
+                        <td>@a.EndsAt.ToLocalTime().ToString("g")</td>
+                        <td>@(a.IsActive ? "Activa" : "Inactiva")</td>
+                        <td><a href="@($"/activities/{a.Id}")">Editar</a></td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
 
 @code {
     [CascadingParameter] Task<AuthenticationState> AuthState { get; set; } = default!;

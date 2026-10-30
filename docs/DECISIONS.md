@@ -525,3 +525,6 @@ manual de jugadores que desde D25 no sirve: cada jugador nace al unirse.
 
 - Solo «Borrar todos»: no deja borrar los datos de una sola persona que lo pida.
 - Mantener «Vaciar jugadores» para el SuperAdmin: un botón que vacía la base de datos de la nube entera.
+- d2 (la invitación, del autor): junto al QR, «Copiar código» y «Copiar invitación», un texto corto con el título
+  y el código para pegar en WhatsApp o en un email. El QR se descarga como PNG de unos 1200 px (40 píxeles por
+  módulo), suficiente para un cartel impreso; se genera en el navegador, sin pasar por la Api.

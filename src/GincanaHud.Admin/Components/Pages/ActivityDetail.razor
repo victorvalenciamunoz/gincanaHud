@@ -17,7 +17,7 @@ else if (_detail is not null)
 {
     <p><a href="/activities">← Actividades</a> · <a href="/live/@Id">En vivo</a></p>
 
-    <p class="page-kicker">Evento</p>
+    <p class="page-kicker">Actividad</p>
     <h1>Editar actividad</h1>
     <div class="join-panel">
         <div class="join-panel-text">
@@ -30,6 +30,12 @@ else if (_detail is not null)
             <p class="page-lead" style="margin:0">
                 Escanea el QR o teclea el mismo código en la app.
             </p>
+            <div class="join-actions">
+                <button type="button" @onclick="CopyCodeAsync">Copiar código</button>
+                <button type="button" class="btn-muted" @onclick="CopyInvitationAsync">Copiar invitación</button>
+                <a class="button-link" href="@_qrDownloadUri" download="@($"qr-{_detail.JoinCode}.png")">Descargar QR (PNG)</a>
+            </div>
+            @if (!string.IsNullOrEmpty(_copyMessage)) { <p class="join-copied">@_copyMessage</p> }
         </div>
         <img class="join-qr" src="@_qrDataUri" alt="QR @_detail.JoinCode" width="180" height="180" />
     </div>
@@ -197,6 +203,8 @@ else if (_detail is not null)
     string? _message;
     string? _playersMessage;
     string? _qrDataUri;
+    string? _qrDownloadUri;
+    string? _copyMessage;
     bool _busy;
     Guid? _editingPoiId;
 
@@ -257,6 +265,8 @@ else if (_detail is not null)
 
             _error = null;
             _qrDataUri = JoinQrGenerator.ToPngDataUri(_detail.JoinCode);
+            // About 1200 px: enough for a printed poster.
+            _qrDownloadUri = JoinQrGenerator.ToPngDataUri(_detail.JoinCode, pixelsPerModule: 40);
             _title = _detail.Title;
             _description = _detail.Description;
             _isActive = _detail.IsActive;
@@ -443,6 +453,25 @@ else if (_detail is not null)
         }
         catch (Exception ex) { _message = ex.Message; }
         finally { _busy = false; }
+    }
+
+    Task CopyCodeAsync() => CopyAsync(_detail!.JoinCode, "Código copiado.");
+
+    Task CopyInvitationAsync() => CopyAsync(
+        JoinInvitation.Text(_detail!.Title, _detail.JoinCode),
+        "Invitación copiada: pégala en WhatsApp o en un email.");
+
+    async Task CopyAsync(string text, string done)
+    {
+        try
+        {
+            await JS.InvokeVoidAsync("navigator.clipboard.writeText", text);
+            _copyMessage = done;
+        }
+        catch (JSException)
+        {
+            _copyMessage = "El navegador no ha dejado copiar: selecciona el código y cópialo a mano.";
+        }
     }
 
     async Task RemovePlayerAsync(LivePlayerProgressDto p)
