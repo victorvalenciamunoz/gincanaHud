@@ -105,7 +105,6 @@ src/GincanaHud.Api/
   Features/
     Users/
       ListUsers/
-      UpsertUser/
     Activities/
       …
     Pois/

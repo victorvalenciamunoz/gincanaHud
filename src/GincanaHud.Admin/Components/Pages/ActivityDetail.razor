@@ -1,6 +1,7 @@
 @page "/activities/{Id:guid}"
 @inject AdminApiClient Api
 @inject NavigationManager Nav
+@inject IJSRuntime JS
 
 <PageTitle>Actividad</PageTitle>
 
@@ -150,6 +151,37 @@ else if (_detail is not null)
             </tbody>
         </table>
     }
+
+    <h2>Jugadores (@(_players?.Count ?? 0))</h2>
+    @if (!string.IsNullOrEmpty(_playersMessage)) { <p>@_playersMessage</p> }
+    @if (_players is null || _players.Count == 0)
+    {
+        <p>Nadie se ha unido todavía.</p>
+    }
+    else
+    {
+        <p class="page-lead">Quitar a un jugador borra sus capturas, su participación y su contacto; no se puede deshacer.</p>
+        <table>
+            <thead><tr><th>Jugador</th><th>Contacto</th><th>Unido</th><th>Capturas</th><th></th></tr></thead>
+            <tbody>
+            @foreach (var p in _players)
+            {
+                <tr>
+                    <td>@p.DisplayName</td>
+                    <td>@(p.ContactEmail ?? p.ContactPhone ?? "—")</td>
+                    <td>@p.JoinedAt.ToLocalTime().ToString("g")</td>
+                    <td>@p.CapturedCount / @p.PoiTotal</td>
+                    <td class="row-actions">
+                        <button type="button" class="linkish danger" @onclick="() => RemovePlayerAsync(p)" disabled="@_busy">Quitar</button>
+                    </td>
+                </tr>
+            }
+            </tbody>
+        </table>
+        <p>
+            <button type="button" class="btn-danger" @onclick="RemoveAllPlayersAsync" disabled="@_busy">Borrar todos los jugadores</button>
+        </p>
+    }
 }
 
 @code {
@@ -159,9 +191,11 @@ else if (_detail is not null)
 
     ActivityDetailDto? _detail;
     List<RankingEntryDto>? _ranking;
+    List<LivePlayerProgressDto>? _players;
     List<MapPoiMarker> _mapPois = [];
     string? _error;
     string? _message;
+    string? _playersMessage;
     string? _qrDataUri;
     bool _busy;
     Guid? _editingPoiId;
@@ -218,6 +252,8 @@ else if (_detail is not null)
 
             var ranking = await Api.GetRankingAsync(Id);
             _ranking = ranking.IsError ? [] : ranking.Value;
+            var live = await Api.GetLiveProgressAsync(Id);
+            _players = live.IsError ? [] : live.Value.Players.OrderBy(p => p.DisplayName).ToList();
 
             _error = null;
             _qrDataUri = JoinQrGenerator.ToPngDataUri(_detail.JoinCode);
@@ -406,6 +442,40 @@ else if (_detail is not null)
             await ReloadAsync();
         }
         catch (Exception ex) { _message = ex.Message; }
+        finally { _busy = false; }
+    }
+
+    async Task RemovePlayerAsync(LivePlayerProgressDto p)
+    {
+        if (!await JS.InvokeAsync<bool>("confirm", $"¿Quitar a «{p.DisplayName}»? Se borran sus capturas y su contacto."))
+            return;
+
+        _busy = true;
+        try
+        {
+            var removed = await Api.RemovePlayerAsync(Id, p.UserId);
+            if (removed.IsError) { _playersMessage = removed.FirstError.Description; return; }
+            _playersMessage = $"Quitado «{p.DisplayName}».";
+            await ReloadAsync();
+        }
+        catch (Exception ex) { _playersMessage = ex.Message; }
+        finally { _busy = false; }
+    }
+
+    async Task RemoveAllPlayersAsync()
+    {
+        if (!await JS.InvokeAsync<bool>("confirm", $"¿Borrar los {_players?.Count} jugadores de la actividad, con sus capturas y contactos? No se puede deshacer."))
+            return;
+
+        _busy = true;
+        try
+        {
+            var removed = await Api.RemoveAllPlayersAsync(Id);
+            if (removed.IsError) { _playersMessage = removed.FirstError.Description; return; }
+            _playersMessage = $"Borrados {removed.Value.Count} jugadores.";
+            await ReloadAsync();
+        }
+        catch (Exception ex) { _playersMessage = ex.Message; }
         finally { _busy = false; }
     }
 

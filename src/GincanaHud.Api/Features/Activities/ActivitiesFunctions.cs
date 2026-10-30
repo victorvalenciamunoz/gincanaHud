@@ -9,8 +9,8 @@ using GincanaHud.Api.Features.Activities.GetLiveProgress;
 using GincanaHud.Api.Features.Activities.GetRanking;
 using GincanaHud.Api.Features.Activities.JoinActivity;
 using GincanaHud.Api.Features.Activities.ListActivities;
-using GincanaHud.Api.Features.Activities.RegisterParticipant;
 using GincanaHud.Api.Features.Activities.RemoveActivityPoi;
+using GincanaHud.Api.Features.Activities.RemovePlayers;
 using GincanaHud.Api.Features.Activities.UpdateActivity;
 using GincanaHud.Api.Features.Activities.UpdateActivityPoi;
 using GincanaHud.Shared;
@@ -64,17 +64,6 @@ public sealed class ActivitiesFunctions(ISender sender)
 		var result = await sender.Send(new GetActivityQuery(id, userId), ct);
 		return result.ToHttpResult();
 	}
-
-	[Function("RegisterParticipant")]
-	public Task<IResult> RegisterParticipant(
-		[HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "activities/{id:guid}/participants")] HttpRequest req,
-		Guid id,
-		CancellationToken ct) =>
-		req.WithJsonBodyAsync<RegisterParticipantRequest>(async body =>
-		{
-			var result = await sender.Send(new RegisterParticipantCommand(id, body.UserId), ct);
-			return result.ToHttpResult(_ => Results.NoContent());
-		}, ct);
 
 	[Function("CapturePoi")]
 	public Task<IResult> Capture(
@@ -180,6 +169,30 @@ public sealed class ActivitiesFunctions(ISender sender)
 	{
 		var result = await sender.Send(new RemoveActivityPoiCommand(id, poiId, AdminScope.OrganizationOf(req)), ct);
 		return result.ToHttpResult(_ => Results.NoContent());
+	}
+
+	// Captures, participation and the player with their contact (D16): one, or all of them after the prizes.
+	[Function("RemovePlayer")]
+	[Authorize(Policy = JwtAuthExtensions.AdminPolicy)]
+	public async Task<IResult> RemovePlayer(
+		[HttpTrigger(AuthorizationLevel.Anonymous, "delete", Route = "activities/{id:guid}/players/{userId:guid}")] HttpRequest req,
+		Guid id,
+		Guid userId,
+		CancellationToken ct)
+	{
+		var result = await sender.Send(new RemovePlayersCommand(id, userId, AdminScope.OrganizationOf(req)), ct);
+		return result.ToHttpResult(count => Results.Ok(new RemovedPlayersDto(count)));
+	}
+
+	[Function("RemoveAllPlayers")]
+	[Authorize(Policy = JwtAuthExtensions.AdminPolicy)]
+	public async Task<IResult> RemoveAllPlayers(
+		[HttpTrigger(AuthorizationLevel.Anonymous, "delete", Route = "activities/{id:guid}/players")] HttpRequest req,
+		Guid id,
+		CancellationToken ct)
+	{
+		var result = await sender.Send(new RemovePlayersCommand(id, OrganizationScope: AdminScope.OrganizationOf(req)), ct);
+		return result.ToHttpResult(count => Results.Ok(new RemovedPlayersDto(count)));
 	}
 
 	[Function("GetLiveProgress")]
