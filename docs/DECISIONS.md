@@ -408,6 +408,13 @@ para los tests de base de datos y que `main` exija el CI en verde.
     probaría nada más.
   - La siembra crea las actividades con hora +01:00, como el panel, y un test manda una captura sin conexión con
     +01:00: si alguien quita el paso a UTC, Npgsql falla (comprobado quitándolo a propósito).
+- Los tests del cliente del panel (paso c) dan a `AdminApiClient` un `HttpClient` con un `HttpMessageHandler`
+  falso de pocas líneas: sin paquete de mocks. Las respuestas salen de `Panel/Fixtures`: el 404 grabado de la nube
+  con una llamada anónima; el 409 y el 200 escritos a mano con la misma forma (el 409 pide sesión y una lista real
+  traería datos reales).
+- Un solo proyecto de tests también para el panel: referenciar el proyecto Blazor WebAssembly compila sin avisos.
+  Se separaría en dos si los tests de Postgres pasan del minuto, si el CI tiene que tratarlos distinto o si esa
+  referencia da problemas.
 - En los tests, coordenadas neutras alrededor de (0, 0): el repo es público.
 
 **Alternativas descartadas**

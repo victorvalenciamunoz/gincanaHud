@@ -1,0 +1,1 @@
+{"type":"https://tools.ietf.org/html/rfc9110#section-15.5.10","title":"AdminUser.UsernameTaken","status":409,"detail":"Ese usuario ya existe.","instance":"/api/panel-users","code":"AdminUser.UsernameTaken"}
