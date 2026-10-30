@@ -102,7 +102,14 @@ Lo cerrado hasta la fase 11 y la fase 13 están en `docs/historia.md`.
       hueco encima del texto (`PodiumSlot.StepHeight`), así que crece con la letra. Probado con un finalista.
     - Al salir desde la pantalla final, Unirse dice «Saliste de la actividad…» (`JoinViewModel.RefreshSession`
       lo pone al pasar de tener sesión a no tenerla, venga de donde venga).
-- [ ] Paso f — despliegue y prueba final.
+- [ ] Paso f — despliegue y prueba final. Desplegado `main` (17faa4a, tras la PR #25) el 2026-10-30, en verde.
+  Faltan: borrar en Supabase los jugadores sin actividad (consulta en el chat, la ejecuta el autor), quitar
+  «Prueba movil» de la actividad de prueba desde el panel y la actividad completa jugada por la calle.
+- [ ] Paso g — APK descargable (D28). `scripts/publish-apk.ps1` (como el de VientoHud) compila en Release desde
+  limpio, firma con la clave de `%USERPROFILE%\.gincanahud\` (creada el 2026-10-30, `CN=GincanaHud`, RSA 2048) y
+  verifica la firma con `apksigner`. Versión 0.9.0 (`ApplicationVersion` 900); `artifacts/` fuera del repo.
+  Primer APK: 31 MB, firma verificada. Faltan: instalarlo en el móvil del autor (antes hay que desinstalar la
+  versión de desarrollo, firmada con otra clave), unirse y capturar contra la nube, y publicar la release.
 
 ## Fase 12 — cerrada salvo la factura
 

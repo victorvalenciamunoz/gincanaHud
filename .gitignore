@@ -15,3 +15,6 @@ build-hud.txt
 
 # Azure Functions (local)
 local.settings.json
+
+# APK builds (scripts/publish-apk.ps1)
+artifacts/

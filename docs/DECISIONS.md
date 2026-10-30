@@ -549,3 +549,30 @@ código se tragaba, y el móvil no vibraba nunca.
 - Toques que se aceleran (lo que había): guían sin mirar, pero vibran sin parar mientras se busca y gastan
   batería.
 - Una vibración al entrar y después toques: lo mismo, con un aviso más.
+
+## D28 — APK descargable en GitHub Releases, firmado con una clave propia fuera del repo
+
+**Contexto:** fase 14 (2026-10-30). El autor quiere un enlace para que otra persona se descargue la app y la
+pruebe, como en VientoHud (su decisión 052). Compilarla exigiría el SDK de .NET 11 Preview y la carga de trabajo
+de MAUI.
+
+**Decisión** (del autor)
+
+- Paso g nuevo de la fase 14, después de la prueba final del paso f.
+- Igual que VientoHud: `scripts/publish-apk.ps1` compila en Release desde limpio, firma, verifica la firma con
+  `apksigner` (falla si no verifica o no la firma `CN=GincanaHud`) y da el SHA-256. Publicación a mano con
+  `gh release create`, marcada como *pre-release*.
+- Clave propia fuera del repositorio (público), en `%USERPROFILE%\.gincanahud\`, con copia de seguridad del
+  autor: sin ella, una versión nueva no se instala encima de la anterior. En el certificado, `CN=GincanaHud`, no
+  un nombre personal.
+- Versión 0.9.0 (de pruebas, antes de dar el proyecto por terminado). `ApplicationVersion` = mayor×10000 +
+  menor×100 + parche (0.9.0 → 900), siempre creciente.
+- Con la app sola no se juega: las notas de la versión explican que hace falta el código de una actividad de la
+  nube, con los puntos donde vaya a estar quien prueba. Sin nombres de sitios.
+
+**Alternativas descartadas**
+
+- GitHub Actions al crear una etiqueta: necesita la carga de trabajo de MAUI (preview) en el runner y la clave en
+  los secretos; merece la pena si se publica a menudo.
+- Google Play: cuenta de pago (choca con el coste 0 €) y revisión.
+- Firmar con la clave de depuración: es pública y cambia entre máquinas.

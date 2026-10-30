@@ -17,8 +17,9 @@
 
 		<ApplicationTitle>GincanaHud</ApplicationTitle>
 		<ApplicationId>com.gincanahud.app</ApplicationId>
-		<ApplicationDisplayVersion>1.0.1</ApplicationDisplayVersion>
-		<ApplicationVersion>2</ApplicationVersion>
+		<!-- ApplicationVersion = major×10000 + minor×100 + patch, always increasing (D28). -->
+		<ApplicationDisplayVersion>0.9.0</ApplicationDisplayVersion>
+		<ApplicationVersion>900</ApplicationVersion>
 
 		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'">26.0</SupportedOSPlatformVersion>
 	</PropertyGroup>
