@@ -8,45 +8,32 @@ public sealed class CaptureFxService(IPlayerSettings settings) : ICaptureFxServi
 	private static readonly object Gate = new();
 	private byte[]? _wavBytes;
 	private bool _warming;
-	private long _lastProximityHapticMs;
 
 	public void PlayCaptureSuccess()
 	{
 		if (!settings.SoundEnabled)
 			return;
 
-		try
-		{
-			HapticFeedback.Default.Perform(HapticFeedbackType.LongPress);
-		}
-		catch
-		{
-			/* dispositivo sin háptica */
-		}
-
+		Vibrate(TimeSpan.FromMilliseconds(500));
 		_ = PlayChimeAsync();
 	}
 
-	public void TickProximity(double distanceMeters)
+	public void NotifyProximity()
 	{
-		if (!settings.SoundEnabled)
-			return;
+		if (settings.SoundEnabled)
+			Vibrate(TimeSpan.FromMilliseconds(250));
+	}
 
-		// 15 m → ~900 ms; 0 m → ~180 ms
-		var t = Math.Clamp(distanceMeters / 15.0, 0, 1);
-		var intervalMs = (long)(180 + t * 720);
-		var now = Environment.TickCount64;
-		if (now - _lastProximityHapticMs < intervalMs)
-			return;
-		_lastProximityHapticMs = now;
-
+	// Vibration, not HapticFeedback: haptics follow the system's touch-feedback setting, often off.
+	private static void Vibrate(TimeSpan duration)
+	{
 		try
 		{
-			HapticFeedback.Default.Perform(HapticFeedbackType.Click);
+			Vibration.Default.Vibrate(duration);
 		}
-		catch
+		catch (FeatureNotSupportedException)
 		{
-			/* ignore */
+			/* dispositivo sin vibrador */
 		}
 	}
 

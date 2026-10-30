@@ -528,3 +528,24 @@ manual de jugadores que desde D25 no sirve: cada jugador nace al unirse.
 - d2 (la invitación, del autor): junto al QR, «Copiar código» y «Copiar invitación», un texto corto con el título
   y el código para pegar en WhatsApp o en un email. El QR se descarga como PNG de unos 1200 px (40 píxeles por
   módulo), suficiente para un cartel impreso; se genera en el navegador, sin pasar por la Api.
+
+## D27 — Vibrar una vez al acercarse
+
+**Contexto:** fase 14, paso e (2026-10-30). El HUD tenía código para dar toques cada vez más rápidos dentro de los
+15 m y una vibración al capturar, pero el manifiesto no declaraba `VIBRATE`: MAUI lanzaba una excepción que el
+código se tragaba, y el móvil no vibraba nunca.
+
+**Decisión** (el comportamiento, del autor)
+
+- Una vibración corta (250 ms) al entrar a 15 m de cada POI, y nada más hasta capturar; al capturar, 500 ms. Se
+  quitan los toques que se aceleraban.
+- Se recuerda el POI que ya vibró: si el GPS baila alrededor de los 15 m no vuelve a vibrar. En ruta libre, al
+  cambiar al POI más cercano, el nuevo vibra al entrar en su radio de aviso.
+- `Vibration` en vez de `HapticFeedback`: los toques hápticos de Android siguen el ajuste del sistema de vibrar al
+  tocar, que muchos móviles traen apagado. El interruptor «Sonido y vibración» de la app sigue apagándolo todo.
+
+**Alternativas descartadas**
+
+- Toques que se aceleran (lo que había): guían sin mirar, pero vibran sin parar mientras se busca y gastan
+  batería.
+- Una vibración al entrar y después toques: lo mismo, con un aviso más.
