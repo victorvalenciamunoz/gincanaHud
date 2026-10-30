@@ -421,3 +421,27 @@ para los tests de base de datos y que `main` exija el CI en verde.
 
 - `xunit.v3.mtp-off` para seguir con VSTest sin tocar `global.json`: el camino que Microsoft va dejando.
 - EF InMemory para los handlers: no habría detectado el fallo de las fechas con hora local.
+
+## D24 — Repaso de la visión: qué entra en la fase 14 y qué es una pista
+
+**Contexto:** fase 14, paso a (2026-10-30). Repaso de cada requisito de `VISION.md` contra el código y la nube; la
+lista está en `STATUS.md`.
+
+**Decisión** (del autor)
+
+- **Privacidad y permisos, primero** (paso b, se despliega al cerrarlo): la lista de actividades y el ranking
+  anónimos dejaban sacar nombre, correo y teléfono de los jugadores, y la Api no comprobaba la organización del
+  token, solo el panel filtraba lo que enseña.
+- **Una pista es una ayuda para encontrar el POI** al que vas (por ejemplo, «junto a la fuente»), como funciona el
+  HUD. Se corrige el principio de `CLAUDE.md`, que decía que no llegaban hasta capturar. El código no cambia: la
+  app ya recibe las coordenadas de todos los POIs, que dicen más que cualquier pista, y en ruta libre el servidor
+  no sabe a qué POI va el jugador.
+- Entran también, como pasos pequeños: descargar el QR y copiar el código en el panel, y vibrar al acercarse.
+
+**Alternativas descartadas**
+
+- Pista como premio al capturar, que lleva al siguiente POI (como en papel): cambia el HUD y el panel y encaja mal
+  con la ruta libre.
+- Mandar solo la pista del POI objetivo: no protege nada, por lo dicho de las coordenadas.
+- Arreglar los permisos dentro del paso de jugadores por actividad: una PR menos, pero tardaría más en llegar a la
+  nube.

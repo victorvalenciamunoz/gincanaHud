@@ -13,7 +13,9 @@ Lee `docs/VISION.md` (el porqué y los requisitos), `docs/DOMAIN.md` (modelo), `
 
 ## Principios
 
-- **El servidor decide la captura** (D4). El HUD solo orienta; las pistas no llegan al jugador hasta capturar.
+- **El servidor decide la captura** (D4). El HUD solo orienta; la pista ayuda a encontrar el POI al que vas (D24).
+- **Los contactos de los jugadores solo los ve el admin de su organización**, con sesión. Cada endpoint del panel
+  comprueba la organización del token, no solo el panel (D24).
 - **Coste de infraestructura: 0 €.** Solo planes gratuitos; si algo requiere pagar, se para y se pregunta.
 - **Datos personales mínimos.** Del jugador, nombre y, si hay premio, un contacto (D16). Nada más.
 - **La gestión va en el panel, no en el HUD.** El móvil es para jugar en la calle.
