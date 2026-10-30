@@ -16,6 +16,8 @@ public sealed class ListActivitiesHandler(AppDbContext db)
 		var query = db.Activities.AsNoTracking().Include(a => a.Organization).AsQueryable();
 		if (!request.IncludeInactive)
 			query = query.Where(a => a.IsActive);
+		if (request.OrganizationId is Guid organizationId)
+			query = query.Where(a => a.OrganizationId == organizationId);
 
 		var items = await query
 			.OrderByDescending(a => a.StartsAt)

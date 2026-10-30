@@ -37,13 +37,14 @@ Organization ──< Activity ──< ActivityPoi >── Poi
 ## API (contratos D16)
 
 - `GET|POST /api/organizations`
-- `GET|POST|PUT /api/activities`, `GET /api/activities/{id}?userId=`
-- `POST /api/activities/join` — código + nombre (+ contacto)
+- `GET|POST|PUT /api/activities` (panel; la lista, solo de la organización del admin), `GET /api/activities/{id}?userId=`
+- `POST /api/activities/join` — código + nombre (+ contacto); la respuesta no devuelve contacto (D24)
 - `GET /api/activities/by-code/{code}` — vista previa
 - `POST|PUT|DELETE /api/activities/{id}/pois`
 - `POST /api/activities/{id}/capture`
-- `GET /api/activities/{id}/ranking` — incluye contacto para premios
-- `GET|POST /api/users` (admin / legacy)
+- `GET /api/activities/{id}/ranking` — anónimo, para la app: sin contactos (D24)
+- `GET /api/activities/{id}/ranking/contacts` — panel: con contacto para premios, solo su organización
+- `GET|POST /api/users` (panel)
 - `GET|POST /api/pois`
 
 ## Flujo jugador (evento)

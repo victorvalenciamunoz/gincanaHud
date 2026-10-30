@@ -74,7 +74,8 @@ por terminado, a falta de ideas nuevas.
 - **Paso a — Repaso de la visión (sin código).** Hecho: lista y decisiones en `STATUS.md` y D24.
 - **Paso b — Privacidad y permisos.** La lista de actividades pide sesión de admin (la app no la usa); el ranking
   anónimo, que usa la app al terminar, no lleva contactos; los endpoints del panel comprueban la organización del
-  token (el SuperAdmin ve todo). Se despliega al cerrar el paso.
+  token (el SuperAdmin ve todo). Partido en b1 (que no salgan contactos sin sesión; se despliega al cerrarlo) y b2
+  (que la Api separe organizaciones).
   *Bueno cuando:* tests de que sin sesión no salen contactos y de que un admin no lee ni cambia lo de otra
   organización (403 o 404), y en la nube el ranking anónimo ya no trae contactos.
 - **Paso c — Identidad del jugador.** Al empezar, el autor elige el modelo (por ejemplo, un jugador por actividad

@@ -22,7 +22,9 @@ public sealed class UsersFunctions(ISender sender)
 		return result.ToHttpResult();
 	}
 
+	// Panel only: given an existing name, it answers that player's contact (D24).
 	[Function("UpsertUser")]
+	[Authorize(Policy = JwtAuthExtensions.AdminPolicy)]
 	public Task<IResult> Upsert(
 		[HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "users")] HttpRequest req,
 		CancellationToken ct) =>

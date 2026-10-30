@@ -82,7 +82,7 @@ public sealed class AdminApiClient(HttpClient http)
 	}
 
 	public Task<ErrorOr<List<RankingEntryDto>>> GetRankingAsync(Guid activityId, CancellationToken ct = default)
-		=> SendAsync<List<RankingEntryDto>>(http.GetAsync($"api/activities/{activityId}/ranking", ct), ct);
+		=> SendAsync<List<RankingEntryDto>>(http.GetAsync($"api/activities/{activityId}/ranking/contacts", ct), ct);
 
 	public Task<ErrorOr<LiveProgressDto>> GetLiveProgressAsync(Guid activityId, CancellationToken ct = default)
 		=> SendAsync<LiveProgressDto>(http.GetAsync($"api/activities/{activityId}/live", ct), ct);

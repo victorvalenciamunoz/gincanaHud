@@ -26,7 +26,17 @@ Lo cerrado hasta la fase 11 y la fase 13 están en `docs/historia.md`.
       (despliegue).
   - **Contradicción resuelta:** `CLAUDE.md` decía que las pistas no llegan hasta capturar, y el HUD enseña la del
     POI al que vas. El autor decide que una pista es una ayuda para encontrarlo: se corrige el principio (D24).
-- [ ] Paso b — privacidad y permisos (se despliega al cerrarlo).
+- [ ] Paso b — privacidad y permisos, partido en b1 y b2.
+  - [x] b1 — contactos sin sesión (2026-10-30). `GET /api/activities` y `POST /api/users` piden sesión de admin, y
+    la lista solo trae las actividades de la organización del admin (`AdminScope`; el SuperAdmin, todas). El
+    ranking anónimo sale sin correo ni teléfono; el panel usa `GET /api/activities/{id}/ranking/contacts`, con
+    sesión y solo para su organización (otra → «no encontrada»). La respuesta de unirse no lleva contacto.
+    `GetRankingHandler` reescrito sin las líneas en blanco dobles. `FunctionAuthorizationTests` falla si una
+    función nueva queda anónima sin estar en la lista.
+    Validado: en local, 0 avisos y 83 tests en verde (10 nuevos: ranking sin contactos, con contactos para su
+    organización, otra organización, lista por organización y para el SuperAdmin, unirse sin el contacto
+    guardado, funciones anónimas y `AdminScope`). Nube: pendiente del despliegue.
+  - [ ] b2 — la Api separa organizaciones en el resto de endpoints del panel (directo, jugadores, POIs, editar).
 - [ ] Paso c — identidad del jugador.
 - [ ] Paso d — panel: jugadores por actividad y QR.
 - [ ] Paso e — vibrar al acercarse.

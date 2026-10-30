@@ -31,7 +31,8 @@ public class GetRankingHandlerTests(PostgresFixture postgres)
 		var players = new Dictionary<string, Guid>();
 		foreach (var (name, minutes) in captures)
 		{
-			var player = await TestData.PlayerAsync(db, activity.Id, TestData.UniqueName(name));
+			var player = await TestData.PlayerAsync(
+				db, activity.Id, TestData.UniqueName(name), $"{name.ToLowerInvariant()}@example.com");
 			players[name] = player;
 			for (var i = 0; i < minutes.Length; i++)
 				await TestData.CaptureAsync(db, activity.Id, player, activity.Pois[i], T0.AddMinutes(minutes[i]));
@@ -40,14 +41,14 @@ public class GetRankingHandlerTests(PostgresFixture postgres)
 		return new Scenario(activity, players);
 	}
 
-	private async Task<IReadOnlyList<RankingEntryDto>> RankingAsync(Guid activityId)
+	private async Task<ErrorOr<IReadOnlyList<RankingEntryDto>>> SendAsync(GetRankingQuery query)
 	{
 		await using var db = postgres.CreateDbContext();
-		var result = await new GetRankingHandler(db).Handle(
-			new GetRankingQuery(activityId),
-			TestContext.Current.CancellationToken);
-		return result.Value;
+		return await new GetRankingHandler(db).Handle(query, TestContext.Current.CancellationToken);
 	}
+
+	private async Task<IReadOnlyList<RankingEntryDto>> RankingAsync(Guid activityId) =>
+		(await SendAsync(new GetRankingQuery(activityId))).Value;
 
 	[Fact]
 	public async Task Finishers_come_first_by_arrival_then_by_captures()
@@ -82,13 +83,44 @@ public class GetRankingHandlerTests(PostgresFixture postgres)
 	}
 
 	[Fact]
+	public async Task The_anonymous_ranking_has_no_contacts()
+	{
+		var scenario = await SeedAsync();
+
+		var ranking = await RankingAsync(scenario.Activity.Id);
+
+		Assert.All(ranking, r =>
+		{
+			Assert.Null(r.ContactEmail);
+			Assert.Null(r.ContactPhone);
+		});
+	}
+
+	[Fact]
+	public async Task The_organization_gets_the_contacts()
+	{
+		var scenario = await SeedAsync();
+
+		var ranking = (await SendAsync(new GetRankingQuery(
+			scenario.Activity.Id, IncludeContacts: true, scenario.Activity.OrganizationId))).Value;
+
+		Assert.Equal("bea@example.com", ranking.Single(r => r.UserId == scenario.Players["Bea"]).ContactEmail);
+	}
+
+	[Fact]
+	public async Task Another_organization_does_not_find_the_activity()
+	{
+		var scenario = await SeedAsync();
+
+		var result = await SendAsync(new GetRankingQuery(scenario.Activity.Id, IncludeContacts: true, Guid.NewGuid()));
+
+		Assert.Equal(ErrorType.NotFound, result.FirstError.Type);
+	}
+
+	[Fact]
 	public async Task An_unknown_activity_is_not_found()
 	{
-		await using var db = postgres.CreateDbContext();
-
-		var result = await new GetRankingHandler(db).Handle(
-			new GetRankingQuery(Guid.NewGuid()),
-			TestContext.Current.CancellationToken);
+		var result = await SendAsync(new GetRankingQuery(Guid.NewGuid()));
 
 		Assert.Equal(ErrorType.NotFound, result.FirstError.Type);
 	}

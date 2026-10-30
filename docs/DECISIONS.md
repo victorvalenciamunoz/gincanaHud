@@ -445,3 +445,19 @@ lista está en `STATUS.md`.
 - Mandar solo la pista del POI objetivo: no protege nada, por lo dicho de las coordenadas.
 - Arreglar los permisos dentro del paso de jugadores por actividad: una PR menos, pero tardaría más en llegar a la
   nube.
+
+**Cómo se hizo el paso b1** (técnico, 2026-10-30)
+
+- El middleware solo lee el token en las funciones con `[Authorize]`, así que una función anónima no sabe quién
+  llama. Por eso el ranking con contactos es una ruta aparte, `activities/{id}/ranking/contacts`, para admins, y
+  el ranking anónimo (el que usa la app al terminar) sale siempre sin correo ni teléfono.
+- `AdminScope.OrganizationOf` lee la organización del token: `null` para el SuperAdmin (lo ve todo) y
+  `Guid.Empty` para un admin sin organización (no ve nada). Las consultas llevan esa organización y, si la
+  actividad es de otra, contestan «no encontrada» en vez de 403: así no se confirma que existe. Es la pieza que
+  usará el paso b2.
+- `GET /api/activities` y `POST /api/users` pasan a pedir sesión: la app no los usa (su `EnsureUserAsync` quedó
+  sin llamadas), y con un nombre ya existente el segundo devolvía el contacto de ese jugador.
+- La respuesta de unirse no lleva contacto: el jugador se busca por nombre, así que el guardado puede ser de otra
+  persona. La app guarda lo que teclea el jugador, no lo que contesta el servidor.
+- Un test recorre todas las funciones y falla si alguna nueva queda anónima sin estar en la lista de las que deben
+  serlo (`FunctionAuthorizationTests`).
