@@ -7,8 +7,6 @@ namespace GincanaHud.App.Services;
 
 public interface IGincanaApiClient
 {
-	Task<UserDto> EnsureUserAsync(string displayName, CancellationToken ct = default);
-	Task EnsureParticipantAsync(Guid activityId, Guid userId, CancellationToken ct = default);
 	Task<JoinActivityResponse> JoinAsync(JoinActivityRequest request, CancellationToken ct = default);
 	Task<ActivitySummaryDto?> GetActivityByCodeAsync(string joinCode, CancellationToken ct = default);
 	Task<ActivityDetailDto?> GetActivityAsync(Guid activityId, Guid? userId = null, CancellationToken ct = default);
@@ -24,22 +22,6 @@ public sealed class GincanaApiClient(HttpClient http, ILogger<GincanaApiClient> 
 		PropertyNameCaseInsensitive = true,
 		Converters = { new System.Text.Json.Serialization.JsonStringEnumConverter() }
 	};
-
-	public async Task<UserDto> EnsureUserAsync(string displayName, CancellationToken ct = default)
-	{
-		using var response = await http.PostAsJsonAsync("api/users", new UpsertUserRequest(displayName), ct);
-		response.EnsureSuccessStatusCode();
-		return (await response.Content.ReadFromJsonAsync<UserDto>(JsonOptions, ct))!;
-	}
-
-	public async Task EnsureParticipantAsync(Guid activityId, Guid userId, CancellationToken ct = default)
-	{
-		using var response = await http.PostAsJsonAsync(
-			$"api/activities/{activityId}/participants",
-			new RegisterParticipantRequest(userId),
-			ct);
-		response.EnsureSuccessStatusCode();
-	}
 
 	public async Task<JoinActivityResponse> JoinAsync(JoinActivityRequest request, CancellationToken ct = default)
 	{

@@ -14,19 +14,8 @@
     {
         <text>Jugadores unidos a actividades de <strong>@_orgName</strong> (nombre y contacto para premios).</text>
     }
+    Para quitarlos, entra en su actividad.
 </p>
-
-@if (_isSuper)
-{
-    <div class="form-row">
-        <input @bind="_name" placeholder="Nombre de jugador (alta manual)" />
-        <button @onclick="CreateAsync" disabled="@_busy">Crear / obtener</button>
-        <button type="button" class="btn-danger" @onclick="ClearPlayersAsync" disabled="@_busy"
-                title="Borra capturas, inscripciones y usuarios jugadores. No toca orgs, actividades ni admins.">
-            Vaciar jugadores
-        </button>
-    </div>
-}
 
 @if (!string.IsNullOrEmpty(_message))
 {
@@ -79,12 +68,10 @@ else
     [CascadingParameter] Task<AuthenticationState> AuthState { get; set; } = default!;
 
     List<PlayerDto>? _players;
-    string _name = "";
     string? _message;
     string _orgName = "";
     Guid? _orgId;
     bool _isSuper;
-    bool _busy;
 
     protected override async Task OnInitializedAsync()
     {
@@ -117,36 +104,5 @@ else
         catch (Exception ex) { _message = ex.Message; }
     }
 
-    async Task CreateAsync()
-    {
-        if (!_isSuper || string.IsNullOrWhiteSpace(_name)) return;
-        _busy = true;
-        try
-        {
-            var user = await Api.UpsertUserAsync(_name.Trim());
-            if (user.IsError) { _message = user.FirstError.Description; return; }
-            _message = $"OK: {user.Value.DisplayName}";
-            _name = "";
-            await ReloadAsync();
-        }
-        catch (Exception ex) { _message = ex.Message; }
-        finally { _busy = false; }
-    }
-
-    async Task ClearPlayersAsync()
-    {
-        if (!_isSuper) return;
-        _busy = true;
-        try
-        {
-            var cleared = await Api.ClearPlayersAsync();
-            if (cleared.IsError) { _message = cleared.FirstError.Description; return; }
-            var result = cleared.Value;
-            _message = $"Vacío: {result.UsersDeleted} jugadores, {result.ParticipantsDeleted} inscripciones, {result.CapturesDeleted} capturas.";
-            await ReloadAsync();
-        }
-        catch (Exception ex) { _message = ex.Message; }
-        finally { _busy = false; }
-    }
 }
 

@@ -85,7 +85,8 @@ por terminado, a falta de ideas nuevas.
 - **Paso d — Panel: jugadores por actividad y QR.** El admin de organización ve y limpia, desde el detalle de la
   actividad, sus jugadores: capturas, participación y contacto (datos personales mínimos). Qué queda para el
   SuperAdmin se decide al empezar. En el mismo detalle, descargar el QR en PNG y copiar el código.
-  *Bueno cuando:* tests de que un admin limpia solo lo suyo y el autor lo prueba en el panel.
+  *Bueno cuando:* tests de que un admin limpia solo lo suyo y el autor lo prueba en el panel. Va en dos PR: d1,
+  jugadores (D26); d2, el QR y el código.
 - **Paso e — Vibrar al acercarse.** El móvil vibra una vez al entrar a 15 m del POI, además del cambio del HUD.
   *Bueno cuando:* el autor lo nota en el móvil, en la calle o con el emulador.
 - **Paso f — Despliegue y prueba final.** Workflow `Despliegue` (con migraciones si el paso c las trae), fuera los

@@ -499,3 +499,29 @@ y le sobrescribía el contacto.
 - Nombre único por actividad, buscando por nombre: no hay dos «Ana», pero quien teclea «Ana» sigue quedándose con
   su progreso.
 - Permitir nombres repetidos: menos fricción al unirse, peor al dar premios.
+
+## D26 — Limpiar jugadores por actividad
+
+**Contexto:** fase 14, paso d1 (2026-10-30). `VISION.md` pide que el admin vea y limpie los jugadores de su
+actividad. Solo existía «Vaciar jugadores», del SuperAdmin, que borraba los de todas las organizaciones, y un alta
+manual de jugadores que desde D25 no sirve: cada jugador nace al unirse.
+
+**Decisión** (qué se limpia y qué queda para el SuperAdmin, del autor)
+
+- En el detalle de la actividad, la sección «Jugadores» lista a todos los unidos, también los que no han capturado
+  nada, con su contacto, cuándo se unieron y sus capturas. Cada fila tiene «Quitar», y abajo está «Borrar todos los
+  jugadores», para después de dar los premios; los dos piden confirmación.
+- Quitar a un jugador borra sus capturas en esa actividad, su participación y el propio jugador con su contacto
+  (datos mínimos, D16). Un jugador de antes de D25 que siga en otra actividad conserva esa otra.
+- Api: `DELETE /api/activities/{id}/players/{userId}` y `DELETE /api/activities/{id}/players`, con sesión de admin
+  y la organización del token (otra → «no encontrada»; el SuperAdmin, todas). Todo en una transacción.
+- Se quitan «Vaciar jugadores» y el alta manual (`ClearPlayers`, `UpsertUser`): el SuperAdmin limpia por actividad
+  como cualquier admin. También el alta de participantes (`POST /api/activities/{id}/participants`), anónima y sin
+  uso desde que unirse la hace. Los jugadores de prueba sin actividad se borran a mano en Supabase (paso f).
+- La lista sale del directo (`GET /api/activities/{id}/live`), que ya traía a todos los participantes: no hace falta
+  otra ruta.
+
+**Alternativas descartadas**
+
+- Solo «Borrar todos»: no deja borrar los datos de una sola persona que lo pida.
+- Mantener «Vaciar jugadores» para el SuperAdmin: un botón que vacía la base de datos de la nube entera.

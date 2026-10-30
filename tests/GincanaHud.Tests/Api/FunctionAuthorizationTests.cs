@@ -20,7 +20,6 @@ public class FunctionAuthorizationTests
 		"GetRanking",
 		"Health",
 		"JoinActivity",
-		"RegisterParticipant",
 	];
 
 	[Fact]

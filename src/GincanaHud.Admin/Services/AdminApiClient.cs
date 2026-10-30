@@ -36,11 +36,11 @@ public sealed class AdminApiClient(HttpClient http)
 		return SendAsync<List<PlayerDto>>(http.GetAsync(url, ct), ct);
 	}
 
-	public Task<ErrorOr<UserDto>> UpsertUserAsync(string displayName, CancellationToken ct = default)
-		=> SendAsync<UserDto>(http.PostAsJsonAsync("api/users", new UpsertUserRequest(displayName), ct), ct);
+	public Task<ErrorOr<RemovedPlayersDto>> RemovePlayerAsync(Guid activityId, Guid userId, CancellationToken ct = default)
+		=> SendAsync<RemovedPlayersDto>(http.DeleteAsync($"api/activities/{activityId}/players/{userId}", ct), ct);
 
-	public Task<ErrorOr<ClearPlayersResultDto>> ClearPlayersAsync(CancellationToken ct = default)
-		=> SendAsync<ClearPlayersResultDto>(http.PostAsync("api/users/clear-players", null, ct), ct);
+	public Task<ErrorOr<RemovedPlayersDto>> RemoveAllPlayersAsync(Guid activityId, CancellationToken ct = default)
+		=> SendAsync<RemovedPlayersDto>(http.DeleteAsync($"api/activities/{activityId}/players", ct), ct);
 
 	public Task<ErrorOr<List<OrganizationDto>>> GetOrganizationsAsync(CancellationToken ct = default)
 		=> SendAsync<List<OrganizationDto>>(http.GetAsync("api/organizations", ct), ct);

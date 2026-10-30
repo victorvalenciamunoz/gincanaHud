@@ -25,8 +25,6 @@ public sealed record PlayerActivityDto(
 	string ActivityTitle,
 	DateTimeOffset JoinedAt);
 
-public sealed record UpsertUserRequest(string DisplayName, string? ContactEmail = null, string? ContactPhone = null);
-
 public sealed record ActivitySummaryDto(
 	Guid Id,
 	string Title,
@@ -118,8 +116,6 @@ public sealed record JoinActivityRequest(
 
 public sealed record JoinActivityResponse(UserDto User, ActivitySummaryDto Activity);
 
-public sealed record RegisterParticipantRequest(Guid UserId);
-
 public sealed record CaptureRequest(
 	Guid UserId,
 	Guid PoiId,
@@ -172,10 +168,7 @@ public sealed record CreateOrgAdminRequest(
 	string Password,
 	Guid OrganizationId);
 
-public sealed record ClearPlayersResultDto(
-	int CapturesDeleted,
-	int ParticipantsDeleted,
-	int UsersDeleted);
+public sealed record RemovedPlayersDto(int Count);
 
 /// <summary>Snapshot en vivo del progreso de una actividad (Admin / premios).</summary>
 public sealed record LiveProgressDto(

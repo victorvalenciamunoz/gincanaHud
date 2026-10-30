@@ -44,7 +44,9 @@ Organization ──< Activity ──< ActivityPoi >── Poi
 - `POST /api/activities/{id}/capture`
 - `GET /api/activities/{id}/ranking?userId=` — anónimo, para la app: sin contactos y solo con el id de quien pregunta (D24, D25)
 - `GET /api/activities/{id}/ranking/contacts` — panel: con contacto para premios, solo su organización
-- `GET|POST /api/users` (panel)
+- `GET /api/activities/{id}/live` — panel: directo con todos los participantes, solo su organización
+- `DELETE /api/activities/{id}/players[/{userId}]` — panel: quita a un jugador o a todos, con capturas y contacto (D26)
+- `GET /api/users` (panel: lista; los jugadores nacen al unirse)
 - `GET|POST /api/pois`
 
 ## Flujo jugador (evento)

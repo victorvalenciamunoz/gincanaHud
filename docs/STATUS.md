@@ -64,7 +64,17 @@ Lo cerrado hasta la fase 11 y la fase 13 están en `docs/historia.md`.
   Visto de paso en el móvil (pendiente, sin paso asignado): el aviso de error sale debajo del botón y hay que
   bajar para leerlo entero; en el podio del final, el nombre del #2 no se lee; tras salir desde la pantalla
   final, Unirse sigue diciendo «Listo… Arrancando…».
-- [ ] Paso d — panel: jugadores por actividad y QR.
+- [ ] Paso d — panel: jugadores por actividad y QR (D26), partido en d1 y d2.
+  - [ ] d1 — jugadores por actividad. Código hecho, falta que el autor lo pruebe en el panel. En el detalle de la
+    actividad, la sección «Jugadores» (del directo) con «Quitar» por fila y «Borrar todos los jugadores», con
+    confirmación. `RemovePlayersHandler` borra capturas, participación y jugador en una transacción, solo en la
+    organización del token. Fuera «Vaciar jugadores», el alta manual (`ClearPlayers`, `UpsertUser`) y el alta de
+    participantes anónima (`RegisterParticipant`); en la app, `EnsureUserAsync` y `EnsureParticipantAsync`.
+    Validado: en local, 0 avisos y 101 tests en verde (6 nuevos en `RemovePlayersHandlerTests`: quitar uno se
+    lleva capturas, participación y contacto; borrar todos solo toca esa actividad; otra organización no borra
+    nada; el SuperAdmin sí; un jugador de otra actividad no se encuentra; uno de antes de D25 conserva su otra
+    actividad); la app compila con 0 avisos.
+  - [ ] d2 — descargar el QR en PNG, copiar el código y «Evento» → «Actividad» en el panel.
 - [ ] Paso e — vibrar al acercarse.
 - [ ] Paso f — despliegue y prueba final.
 
