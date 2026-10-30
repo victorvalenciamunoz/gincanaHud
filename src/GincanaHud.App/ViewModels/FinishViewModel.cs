@@ -175,7 +175,8 @@ public sealed class FinishViewModel : ObservableObject
 						row.FinishedAt!.Value.ToLocalTime().ToString("HH:mm:ss"),
 						placeColors[i],
 						row.UserId == _userId,
-						BarHeight: i == 0 ? 88 : i == 1 ? 68 : 56);
+						StepHeight: i == 0 ? 32 : i == 1 ? 12 : 0,
+						Column: i == 0 ? 1 : i == 1 ? 0 : 2);
 					if (i == 0) first = slot;
 					else if (i == 1) second = slot;
 					else third = slot;
@@ -240,4 +241,5 @@ public sealed record PodiumSlot(
 	string Time,
 	string Accent,
 	bool IsMe,
-	double BarHeight);
+	double StepHeight,
+	int Column);
