@@ -14,7 +14,7 @@ public interface IGincanaApiClient
 	Task<ActivityDetailDto?> GetActivityAsync(Guid activityId, Guid? userId = null, CancellationToken ct = default);
 	Task<IReadOnlyList<ActivitySummaryDto>> GetActivitiesAsync(CancellationToken ct = default);
 	Task<CaptureResponse> CaptureAsync(Guid activityId, CaptureRequest request, CancellationToken ct = default);
-	Task<IReadOnlyList<RankingEntryDto>> GetRankingAsync(Guid activityId, CancellationToken ct = default);
+	Task<IReadOnlyList<RankingEntryDto>> GetRankingAsync(Guid activityId, Guid userId, CancellationToken ct = default);
 }
 
 public sealed class GincanaApiClient(HttpClient http, ILogger<GincanaApiClient> logger) : IGincanaApiClient
@@ -139,10 +139,11 @@ public sealed class GincanaApiClient(HttpClient http, ILogger<GincanaApiClient> 
 		public string? Code { get; set; }
 	}
 
-	public async Task<IReadOnlyList<RankingEntryDto>> GetRankingAsync(Guid activityId, CancellationToken ct = default)
+	// Only our own row carries its id: the others come back empty (D25).
+	public async Task<IReadOnlyList<RankingEntryDto>> GetRankingAsync(Guid activityId, Guid userId, CancellationToken ct = default)
 	{
 		var items = await http.GetFromJsonAsync<List<RankingEntryDto>>(
-			$"api/activities/{activityId}/ranking", JsonOptions, ct);
+			$"api/activities/{activityId}/ranking?userId={userId}", JsonOptions, ct);
 		return items ?? [];
 	}
 }

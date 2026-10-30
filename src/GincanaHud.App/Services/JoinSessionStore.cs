@@ -17,9 +17,11 @@ public interface IJoinSessionStore
 {
 	JoinSession? Current { get; }
 	JoinProfile LastProfile { get; }
+	/// <summary>Id del último jugador, aunque se haya salido: al volver a unirse recupera su progreso (D25).</summary>
+	Guid? KeptUserId { get; }
 	void Save(JoinSession session, JoinProfile profile);
 	void SaveProfile(JoinProfile profile);
-	/// <summary>Sale de la actividad pero conserva nombre/código/contacto.</summary>
+	/// <summary>Sale de la actividad pero conserva nombre/código/contacto y el id del jugador.</summary>
 	void ClearSession();
 }
 
@@ -57,6 +59,9 @@ public sealed class PreferencesJoinSessionStore : IJoinSessionStore
 		Preferences.Default.Get(EmailKey, ""),
 		Preferences.Default.Get(PhoneKey, ""));
 
+	public Guid? KeptUserId =>
+		Guid.TryParse(Preferences.Default.Get(UserIdKey, ""), out var userId) ? userId : null;
+
 	public void Save(JoinSession session, JoinProfile profile)
 	{
 		Preferences.Default.Set(UserIdKey, session.UserId.ToString());
@@ -79,7 +84,7 @@ public sealed class PreferencesJoinSessionStore : IJoinSessionStore
 
 	public void ClearSession()
 	{
-		Preferences.Default.Remove(UserIdKey);
+		// UserIdKey stays: without the activity there is no session, but rejoining sends it (D25).
 		Preferences.Default.Remove(ActivityIdKey);
 		Preferences.Default.Remove(ActivityTitleKey);
 	}

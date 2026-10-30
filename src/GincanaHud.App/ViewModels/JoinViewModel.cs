@@ -211,7 +211,8 @@ public sealed class JoinViewModel : ObservableObject
 				code,
 				name,
 				string.IsNullOrWhiteSpace(ContactEmail) ? null : ContactEmail.Trim(),
-				string.IsNullOrWhiteSpace(ContactPhone) ? null : ContactPhone.Trim()));
+				string.IsNullOrWhiteSpace(ContactPhone) ? null : ContactPhone.Trim(),
+				_session.KeptUserId));
 
 			_session.Save(
 				new JoinSession(

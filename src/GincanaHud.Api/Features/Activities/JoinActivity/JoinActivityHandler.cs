@@ -22,7 +22,7 @@ public sealed class JoinActivityHandler(AppDbContext db)
 
 		var activity = await db.Activities
 			.Include(a => a.Organization)
-			.Include(a => a.Participants)
+			.Include(a => a.Participants).ThenInclude(p => p.User)
 			.FirstOrDefaultAsync(a => a.JoinCode == codeResult.Value.Value, cancellationToken);
 
 		if (activity is null)
@@ -33,30 +33,37 @@ public sealed class JoinActivityHandler(AppDbContext db)
 		{
 			return Error.Validation(
 				code: "Activity.Closed",
-				description: "Esta actividad está caducada o inactiva).");
+				description: "Esta actividad está caducada o inactiva.");
 		}
 
 		var nameResult = DisplayName.Create(body.DisplayName);
 		if (nameResult.IsError)
 			return nameResult.Errors;
 
+		// A new player on every join; the phone gets its own back by sending the id it keeps (D25).
 		var name = nameResult.Value.Value;
-		var user = await db.Users.FirstOrDefaultAsync(u => u.DisplayName == name, cancellationToken);
-		if (user is null)
+		var user = body.UserId is Guid userId
+			? activity.Participants.FirstOrDefault(p => p.UserId == userId)?.User
+			: null;
+		if (user is not null)
 		{
+			user.UpdateContact(body.ContactEmail, body.ContactPhone);
+		}
+		else
+		{
+			if (activity.Participants.Any(p => string.Equals(p.User.DisplayName, name, StringComparison.OrdinalIgnoreCase)))
+			{
+				return Error.Conflict(
+					code: "Player.NameTaken",
+					description: "Ese nombre ya está en la partida: añade una inicial o un apellido.");
+			}
+
 			var created = User.Register(name, body.ContactEmail, body.ContactPhone);
 			if (created.IsError)
 				return created.Errors;
 			user = created.Value;
 			db.Users.Add(user);
-		}
-		else
-		{
-			user.UpdateContact(body.ContactEmail, body.ContactPhone);
-		}
 
-		if (!activity.Participants.Any(p => p.UserId == user.Id))
-		{
 			var joined = activity.RegisterParticipant(user.Id, now);
 			if (joined.IsError)
 				return joined.Errors;
@@ -64,8 +71,7 @@ public sealed class JoinActivityHandler(AppDbContext db)
 
 		await db.SaveChangesAsync(cancellationToken);
 
-		// Anonymous answer: the user is found by name, so the stored contact may be someone else's (D24).
-		// The app keeps what the player typed.
+		// Anonymous answer: no contact (D24). The app keeps what the player typed.
 		return new JoinActivityResponse(
 			ActivityDtoMapping.ToUserDto(user) with { ContactEmail = null, ContactPhone = null },
 			ActivityDtoMapping.ToSummary(activity, activity.Organization.Name));

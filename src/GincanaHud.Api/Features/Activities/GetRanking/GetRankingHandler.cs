@@ -79,7 +79,7 @@ public sealed class GetRankingHandler(AppDbContext db)
 		{
 			users.TryGetValue(r.UserId, out var user);
 			return new RankingEntryDto(
-				r.UserId,
+				request.IncludeContacts || r.UserId == request.ViewerId ? r.UserId : Guid.Empty,
 				user?.DisplayName ?? "?",
 				request.IncludeContacts ? user?.ContactEmail : null,
 				request.IncludeContacts ? user?.ContactPhone : null,

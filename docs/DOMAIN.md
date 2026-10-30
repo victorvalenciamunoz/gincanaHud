@@ -10,7 +10,7 @@ Ubiquitous language for GincanaHud. Architecture/DDD: `docs/ARCHITECTURE.md` (D1
 | **AdminUser** | — | Username único; SuperAdmin (sin org) u OrganizationAdmin (con org). |
 | **Activity** | **ActivityPoi**, **ActivityParticipant** | Título; `JoinCode` único; `StartsAt` &lt; `EndsAt`; `Order` único por actividad. |
 | **Poi** | — (catálogo) | Coordenadas válidas; radio &gt; 0. |
-| **User** | — | `DisplayName`; contacto opcional (premios). |
+| **User** | — | `DisplayName`; contacto opcional (premios). Un jugador por cada unión, no por nombre (D25). |
 | **Capture** | — | Única por (User, Activity, Poi); participante; ventana de juego; radio. |
 
 ## Value objects
@@ -38,11 +38,11 @@ Organization ──< Activity ──< ActivityPoi >── Poi
 
 - `GET|POST /api/organizations`
 - `GET|POST|PUT /api/activities` (panel; la lista, solo de la organización del admin), `GET /api/activities/{id}?userId=`
-- `POST /api/activities/join` — código + nombre (+ contacto); la respuesta no devuelve contacto (D24)
+- `POST /api/activities/join` — código + nombre (+ contacto, + id guardado en el móvil para reincorporarse); nombre ya en la partida → 409; la respuesta no devuelve contacto (D24, D25)
 - `GET /api/activities/by-code/{code}` — vista previa
 - `POST|PUT|DELETE /api/activities/{id}/pois`
 - `POST /api/activities/{id}/capture`
-- `GET /api/activities/{id}/ranking` — anónimo, para la app: sin contactos (D24)
+- `GET /api/activities/{id}/ranking?userId=` — anónimo, para la app: sin contactos y solo con el id de quien pregunta (D24, D25)
 - `GET /api/activities/{id}/ranking/contacts` — panel: con contacto para premios, solo su organización
 - `GET|POST /api/users` (panel)
 - `GET|POST /api/pois`

@@ -112,7 +112,9 @@ public sealed record JoinActivityRequest(
 	string JoinCode,
 	string DisplayName,
 	string? ContactEmail,
-	string? ContactPhone);
+	string? ContactPhone,
+	/// <summary>Id que el móvil ya guarda: si es de un jugador de esta actividad, se reincorpora con su progreso.</summary>
+	Guid? UserId = null);
 
 public sealed record JoinActivityResponse(UserDto User, ActivitySummaryDto Activity);
 
