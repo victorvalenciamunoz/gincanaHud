@@ -68,29 +68,28 @@
                 <ScrollView IsVisible="{!Busy}">
                     <VerticalStackLayout Spacing="12">
                         <!-- Podio: 2º | 1º | 3º -->
-                        <FlexLayout IsVisible="{HasPodium}"
-                                    Direction="Row"
-                                    JustifyContent="SpaceEvenly"
-                                    AlignItems="End"
-                                    HeightRequest="100"
-                                    Padding="0,4">
+                        <!-- A Grid, not a FlexLayout: without a fixed height the flex row measured 0 inside the ScrollView. -->
+                        <Grid IsVisible="{HasPodium}"
+                              ColumnDefinitions="*,*,*"
+                              Padding="0,4">
                             <BindableLayout.ItemsSource>
                                 <Binding Path="Podium" />
                             </BindableLayout.ItemsSource>
                             <BindableLayout.ItemTemplate>
                                 <DataTemplate x:DataType="vm:PodiumSlot">
-                                    <Border FlexLayout.Grow="1"
-                                            FlexLayout.Basis="30%"
+                                    <Border Grid.Column="{Column}"
+                                            VerticalOptions="End"
                                             Margin="4,0"
                                             StrokeThickness="1.5"
                                             Stroke="{$'{Accent}'}"
                                             BackgroundColor="#CC0B1218"
-                                            Padding="8,10"
-                                            HeightRequest="{BarHeight}">
+                                            Padding="8,10">
                                         <Border.StrokeShape>
                                             <RoundRectangle CornerRadius="10" />
                                         </Border.StrokeShape>
                                         <VerticalStackLayout Spacing="2" VerticalOptions="End">
+                                            <!-- The podium step goes on top of the text, so large fonts never clip it. -->
+                                            <ContentView HeightRequest="{StepHeight}" />
                                             <Label Text="{$'#{Place}'}"
                                                    FontFamily="ChakraPetchBold"
                                                    TextColor="{$'{Accent}'}"
@@ -111,7 +110,7 @@
                                     </Border>
                                 </DataTemplate>
                             </BindableLayout.ItemTemplate>
-                        </FlexLayout>
+                        </Grid>
 
                         <Label Text="ORDEN DE LLEGADA"
                                FontFamily="ChakraPetchBold"

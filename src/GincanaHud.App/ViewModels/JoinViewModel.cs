@@ -135,10 +135,14 @@ public sealed class JoinViewModel : ObservableObject
 	{
 		LoadFormFromProfile();
 		var current = _session.Current;
+		var hadSession = HasSession;
 		HasSession = current is not null;
 		if (current is null)
 		{
 			SessionSummary = "Sin actividad unida.";
+			// Also when leaving from the finish screen: the "Listo… Arrancando…" of the join is stale.
+			if (hadSession)
+				SetStatus("Saliste de la actividad. Tus datos se conservan para volver a unirte.");
 			return;
 		}
 
@@ -267,7 +271,6 @@ public sealed class JoinViewModel : ObservableObject
 		_session.ClearSession();
 		_routeCache.Clear();
 		RefreshSession();
-		SetStatus("Saliste de la actividad. Tus datos se conservan para volver a unirte.");
 		_nav.GoToJoin();
 	}
 }

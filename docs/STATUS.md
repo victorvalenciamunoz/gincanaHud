@@ -63,9 +63,9 @@ Lo cerrado hasta la fase 11 y la fase 13 están en `docs/historia.md`.
   actividad de prueba con un POI: un nombre que ya estaba (jugador creado antes con la Api) da el aviso; con un
   nombre libre se une, la captura del POI llega al final con su fila resaltada en el ranking; «Salir de la
   actividad» conserva el id y volver a unirse con el mismo nombre recupera el mismo jugador con la meta hecha.
-  Visto de paso en el móvil (pendiente, sin paso asignado): el aviso de error sale debajo del botón y hay que
-  bajar para leerlo entero; en el podio del final, el nombre del #2 no se lee; tras salir desde la pantalla
-  final, Unirse sigue diciendo «Listo… Arrancando…».
+  Visto de paso en el móvil: el aviso de error sale debajo del botón y hay que bajar para leerlo entero; en el
+  podio del final, el nombre del #2 no se lee; tras salir desde la pantalla final, Unirse sigue diciendo
+  «Listo… Arrancando…». Arreglados junto al paso e.
 - [x] Paso d — panel: jugadores por actividad y QR (D26), partido en d1 y d2 (2026-10-30). Desplegados juntos
   desde `main` tras la PR #22 (despliegue en verde; sin sesión, borrar jugadores → 401 y el alta anónima de
   participantes ya no existe → 404). El autor lo ha probado en el panel de la nube: quitar uno, borrar todos, con
@@ -84,7 +84,8 @@ Lo cerrado hasta la fase 11 y la fase 13 están en `docs/historia.md`.
     «Descargar QR (PNG)» de unos 1200 px para carteles. «Evento» pasa a «Actividad» en la lista y el detalle.
     Validado: en local, 0 avisos y 103 tests en verde (2 nuevos en `JoinMaterialTests`: el PNG descargado mide
     más de 1000 px y la invitación lleva el título y el código en mayúsculas).
-- [ ] Paso e — vibrar al acercarse (D27). Código hecho, falta que el autor lo note en el móvil.
+- [x] Paso e — vibrar al acercarse (D27), 2026-10-30. El autor lo ha notado en el móvil contra la nube: al unirse
+  dentro del radio de aviso de un POI, vibración corta al entrar a 15 m y larga al capturar.
   - El HUD ya intentaba dar toques cada vez más rápidos dentro de los 15 m (`CaptureFxService.TickProximity`) y
     una vibración larga al capturar, pero no vibraba nunca: faltaba el permiso `VIBRATE` y MAUI lanzaba un error
     que el código se tragaba. Por eso el paso a lo vio «solo visual».
@@ -93,6 +94,14 @@ Lo cerrado hasta la fase 11 y la fase 13 están en `docs/historia.md`.
     `HapticFeedback`, que depende del ajuste del sistema de vibrar al tocar. Los dos los apaga el interruptor
     «Sonido y vibración».
   Validado: la app compila con 0 avisos.
+  - Arreglos de la app vistos en el paso c, probados en el móvil (letra grande) contra la nube el 2026-10-30:
+    - Unirse baja sola hasta el aviso de error (`JoinPage`, al cambiar `Status` con error); probado con un
+      código inexistente.
+    - Podio: las tarjetas tenían altura fija y con letra grande se cortaba el texto. Ahora es un `Grid` de tres
+      columnas (2º, 1º, 3º; un `FlexLayout` sin altura fija medía 0 dentro del `ScrollView`) y el escalón es un
+      hueco encima del texto (`PodiumSlot.StepHeight`), así que crece con la letra. Probado con un finalista.
+    - Al salir desde la pantalla final, Unirse dice «Saliste de la actividad…» (`JoinViewModel.RefreshSession`
+      lo pone al pasar de tener sesión a no tenerla, venga de donde venga).
 - [ ] Paso f — despliegue y prueba final.
 
 ## Fase 12 — cerrada salvo la factura
