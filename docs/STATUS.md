@@ -84,7 +84,8 @@ Lo cerrado hasta la fase 11 y la fase 13 están en `docs/historia.md`.
     «Descargar QR (PNG)» de unos 1200 px para carteles. «Evento» pasa a «Actividad» en la lista y el detalle.
     Validado: en local, 0 avisos y 103 tests en verde (2 nuevos en `JoinMaterialTests`: el PNG descargado mide
     más de 1000 px y la invitación lleva el título y el código en mayúsculas).
-- [ ] Paso e — vibrar al acercarse (D27). Código hecho, falta que el autor lo note en el móvil.
+- [x] Paso e — vibrar al acercarse (D27), 2026-10-30. El autor lo ha notado en el móvil contra la nube: al unirse
+  dentro del radio de aviso de un POI, vibración corta al entrar a 15 m y larga al capturar.
   - El HUD ya intentaba dar toques cada vez más rápidos dentro de los 15 m (`CaptureFxService.TickProximity`) y
     una vibración larga al capturar, pero no vibraba nunca: faltaba el permiso `VIBRATE` y MAUI lanzaba un error
     que el código se tragaba. Por eso el paso a lo vio «solo visual».
