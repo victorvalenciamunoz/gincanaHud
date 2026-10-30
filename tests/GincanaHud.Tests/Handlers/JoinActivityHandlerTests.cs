@@ -7,12 +7,19 @@ namespace GincanaHud.Tests.Handlers;
 [Collection(PostgresCollection.Name)]
 public class JoinActivityHandlerTests(PostgresFixture postgres)
 {
-	private async Task<ErrorOr<JoinActivityResponse>> JoinAsync(string joinCode, string displayName)
+	private async Task<ErrorOr<JoinActivityResponse>> JoinAsync(
+		string joinCode, string displayName, Guid? keptId = null, string? email = null)
 	{
 		await using var db = postgres.CreateDbContext();
 		return await new JoinActivityHandler(db).Handle(
-			new JoinActivityCommand(new JoinActivityRequest(joinCode, displayName, null, null)),
+			new JoinActivityCommand(new JoinActivityRequest(joinCode, displayName, email, null, keptId)),
 			TestContext.Current.CancellationToken);
+	}
+
+	private async Task<SeededActivity> SeedAsync(int poiCount = 0)
+	{
+		await using var db = postgres.CreateDbContext();
+		return await TestData.ActivityAsync(db, poiCount);
 	}
 
 	private async Task<int> ParticipantCountAsync(Guid activityId)
@@ -78,19 +85,11 @@ public class JoinActivityHandlerTests(PostgresFixture postgres)
 	}
 
 	[Fact]
-	public async Task The_answer_does_not_carry_the_stored_contact()
+	public async Task The_answer_does_not_carry_the_contact()
 	{
-		// Players are found by name: whoever types an existing name must not get that player's contact.
-		var name = TestData.UniqueName();
-		SeededActivity activity;
-		await using (var db = postgres.CreateDbContext())
-		{
-			var earlier = await TestData.ActivityAsync(db);
-			await TestData.PlayerAsync(db, earlier.Id, name, "ana@example.com");
-			activity = await TestData.ActivityAsync(db);
-		}
+		var activity = await SeedAsync();
 
-		var result = await JoinAsync(activity.JoinCode, name);
+		var result = await JoinAsync(activity.JoinCode, TestData.UniqueName(), email: "ana@example.com");
 
 		Assert.False(result.IsError);
 		Assert.Null(result.Value.User.ContactEmail);
@@ -98,18 +97,47 @@ public class JoinActivityHandlerTests(PostgresFixture postgres)
 	}
 
 	[Fact]
-	public async Task Joining_twice_with_the_same_name_keeps_one_participant()
+	public async Task A_name_already_in_the_activity_is_rejected()
 	{
-		SeededActivity activity;
-		await using (var db = postgres.CreateDbContext())
-			activity = await TestData.ActivityAsync(db);
+		var activity = await SeedAsync();
 		var name = TestData.UniqueName();
+		await JoinAsync(activity.JoinCode, name);
 
-		var first = await JoinAsync(activity.JoinCode, name);
-		var second = await JoinAsync(activity.JoinCode, name);
+		// Someone else typing the same name, in other case, gets neither the player nor a duplicate.
+		var second = await JoinAsync(activity.JoinCode, name.ToUpperInvariant());
 
-		Assert.False(second.IsError);
-		Assert.Equal(first.Value.User.Id, second.Value.User.Id);
+		Assert.Equal(ErrorType.Conflict, second.FirstError.Type);
+		Assert.Equal("Player.NameTaken", second.FirstError.Code);
 		Assert.Equal(1, await ParticipantCountAsync(activity.Id));
+	}
+
+	[Fact]
+	public async Task Rejoining_with_the_kept_id_keeps_the_progress()
+	{
+		var activity = await SeedAsync(poiCount: 1);
+		var name = TestData.UniqueName();
+		var first = (await JoinAsync(activity.JoinCode, name)).Value.User.Id;
+		await using (var db = postgres.CreateDbContext())
+			await TestData.CaptureAsync(db, activity.Id, first, activity.Pois[0], DateTimeOffset.UtcNow.AddMinutes(-5));
+
+		var again = await JoinAsync(activity.JoinCode, name, keptId: first);
+
+		Assert.Equal(first, again.Value.User.Id);
+		Assert.Equal(1, await ParticipantCountAsync(activity.Id));
+		await using var check = postgres.CreateDbContext();
+		Assert.Equal(1, await check.Captures.CountAsync(c => c.UserId == first, TestContext.Current.CancellationToken));
+	}
+
+	[Fact]
+	public async Task The_same_name_in_another_activity_is_another_player()
+	{
+		var name = TestData.UniqueName();
+		var first = (await JoinAsync((await SeedAsync()).JoinCode, name)).Value.User.Id;
+
+		// Even sending the id kept from the other activity.
+		var other = await JoinAsync((await SeedAsync()).JoinCode, name, keptId: first);
+
+		Assert.False(other.IsError);
+		Assert.NotEqual(first, other.Value.User.Id);
 	}
 }

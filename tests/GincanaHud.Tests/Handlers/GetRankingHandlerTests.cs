@@ -47,15 +47,17 @@ public class GetRankingHandlerTests(PostgresFixture postgres)
 		return await new GetRankingHandler(db).Handle(query, TestContext.Current.CancellationToken);
 	}
 
-	private async Task<IReadOnlyList<RankingEntryDto>> RankingAsync(Guid activityId) =>
-		(await SendAsync(new GetRankingQuery(activityId))).Value;
+	// The panel's view: every id and the contacts.
+	private async Task<IReadOnlyList<RankingEntryDto>> RankingAsync(Scenario scenario) =>
+		(await SendAsync(new GetRankingQuery(
+			scenario.Activity.Id, IncludeContacts: true, scenario.Activity.OrganizationId))).Value;
 
 	[Fact]
 	public async Task Finishers_come_first_by_arrival_then_by_captures()
 	{
 		var scenario = await SeedAsync();
 
-		var ranking = await RankingAsync(scenario.Activity.Id);
+		var ranking = await RankingAsync(scenario);
 
 		// Bea reaches the last POI before Ana; Eva and Dani tie on captures and Eva captured earlier.
 		// Fede has no captures and is not listed.
@@ -68,7 +70,7 @@ public class GetRankingHandlerTests(PostgresFixture postgres)
 	{
 		var scenario = await SeedAsync();
 
-		var ranking = await RankingAsync(scenario.Activity.Id);
+		var ranking = await RankingAsync(scenario);
 
 		var bea = ranking.Single(r => r.UserId == scenario.Players["Bea"]);
 		Assert.Equal(10 + 20 + 30, bea.TotalPoints);
@@ -83,17 +85,20 @@ public class GetRankingHandlerTests(PostgresFixture postgres)
 	}
 
 	[Fact]
-	public async Task The_anonymous_ranking_has_no_contacts()
+	public async Task The_app_ranking_has_no_contacts_and_only_the_viewers_id()
 	{
 		var scenario = await SeedAsync();
+		var ana = scenario.Players["Ana"];
 
-		var ranking = await RankingAsync(scenario.Activity.Id);
+		var ranking = (await SendAsync(new GetRankingQuery(scenario.Activity.Id, ViewerId: ana))).Value;
 
 		Assert.All(ranking, r =>
 		{
 			Assert.Null(r.ContactEmail);
 			Assert.Null(r.ContactPhone);
 		});
+		// The id lets a phone rejoin as that player (D25): the others' stay hidden.
+		Assert.Equal([Guid.Empty, ana, Guid.Empty, Guid.Empty, Guid.Empty], ranking.Select(r => r.UserId));
 	}
 
 	[Fact]
@@ -101,8 +106,7 @@ public class GetRankingHandlerTests(PostgresFixture postgres)
 	{
 		var scenario = await SeedAsync();
 
-		var ranking = (await SendAsync(new GetRankingQuery(
-			scenario.Activity.Id, IncludeContacts: true, scenario.Activity.OrganizationId))).Value;
+		var ranking = await RankingAsync(scenario);
 
 		Assert.Equal("bea@example.com", ranking.Single(r => r.UserId == scenario.Players["Bea"]).ContactEmail);
 	}

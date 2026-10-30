@@ -87,14 +87,15 @@ public sealed class ActivitiesFunctions(ISender sender)
 			return result.ToHttpResult();
 		}, ct);
 
-	// The app shows it when the player finishes: no contacts (D24).
+	// The app shows it when the player finishes: no contacts (D24) and only the caller's own id (D25).
 	[Function("GetRanking")]
 	public async Task<IResult> GetRanking(
 		[HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "activities/{id:guid}/ranking")] HttpRequest req,
 		Guid id,
 		CancellationToken ct)
 	{
-		var result = await sender.Send(new GetRankingQuery(id), ct);
+		Guid? viewerId = Guid.TryParse(req.Query["userId"], out var value) ? value : null;
+		var result = await sender.Send(new GetRankingQuery(id, ViewerId: viewerId), ct);
 		return result.ToHttpResult();
 	}
 

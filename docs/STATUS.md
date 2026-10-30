@@ -49,7 +49,15 @@ Lo cerrado hasta la fase 11 y la fase 13 están en `docs/historia.md`.
     Validado: en local, 0 avisos y 93 tests en verde (10 nuevos en `OrganizationScopeTests` y
     `FunctionAuthorizationTests`: otra organización no edita, ni añade, edita o quita POIs, ni ve el directo, ni
     crea; la propia y el SuperAdmin sí editan; las listas se restringen).
-- [ ] Paso c — identidad del jugador.
+- [ ] Paso c — identidad del jugador (D25). Código hecho, falta la prueba en el móvil contra la nube.
+  - `JoinActivityHandler` crea un jugador nuevo en cada unión; reutiliza el de `JoinActivityRequest.UserId` solo
+    si ya está en esa actividad. Un nombre que ya está en la partida → 409 `Player.NameTaken`.
+  - El ranking anónimo solo lleva el id de quien pregunta (`?userId=`); el panel, todos.
+  - App: manda el id que guarda al unirse (`IJoinSessionStore.KeptUserId`, que sobrevive a «Salir de la
+    actividad») y pide el ranking con su id.
+  Validado: en local, 0 avisos y 95 tests en verde (nombre repetido, reincorporarse con el id conserva las
+  capturas, mismo nombre en otra actividad es otro jugador, ranking de la app con solo el id propio); la app
+  compila con 0 avisos.
 - [ ] Paso d — panel: jugadores por actividad y QR.
 - [ ] Paso e — vibrar al acercarse.
 - [ ] Paso f — despliegue y prueba final.
@@ -176,7 +184,6 @@ Lo cerrado hasta la fase 11 y la fase 13 están en `docs/historia.md`.
 |------|------|
 | Crash Android `jumpToEnd` | Bug de IDs tras Fast Deployment (.NET 11). `EmbedAssembliesIntoApk=true`. Si vuelve: desinstalar la app y redesplegar. |
 | Tests | Dominio, geodesia, handlers contra Postgres (Docker en marcha) y cliente del panel; solo los rápidos: `dotnet test -- --filter-not-namespace GincanaHud.Tests.Handlers`. Workflows: `CI`, keepalive diario y `Despliegue` (a mano). |
-| Jugador por nombre | Unirse reconoce al jugador por el nombre en toda la base de datos: dos personas con el mismo nombre en una actividad serían el mismo jugador y compartirían capturas. Por decidir con el autor. |
 | Toolchain MAUI | El SDK 11 preview 6 de `global.json` ya no está instalado; `rollForward` coge el 11 RC3. Workload `maui-android` RC2 instalado el 2026-10-29: la app compila con los paquetes de MAUI preview 6. |
 | Functions en local | Hace falta Azure Functions Core Tools (`winget install Microsoft.Azure.FunctionsCoreTools`, 4.15.2) en el PATH del proceso que lanza el AppHost. |
 

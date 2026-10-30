@@ -471,3 +471,31 @@ lista está en `STATUS.md`.
   hay nada que ocultar. Leer o cambiar algo de otra da «no encontrada», como en b1.
 - En las listas de POIs y jugadores, la organización del token sustituye a la que pide el panel
   (`AdminScope.Restrict`): un admin no puede pedir la de otro.
+
+## D25 — Identidad del jugador: uno nuevo en cada unión
+
+**Contexto:** fase 14, paso c (2026-10-30). Unirse buscaba al jugador por su nombre en toda la base de datos: dos
+«Ana» en la misma fiesta eran el mismo jugador, y quien tecleara un nombre ajeno se quedaba con su progreso, su id
+y le sobrescribía el contacto.
+
+**Decisión** (el modelo y el nombre repetido, del autor)
+
+- Unirse crea siempre un jugador nuevo. El móvil manda el id que guarda (`JoinActivityRequest.UserId`) y el
+  servidor lo reutiliza solo si ese jugador ya está en esa actividad: así se reincorpora con su progreso. Saber un
+  nombre ya no da nada.
+- Un nombre que ya está en la actividad (sin distinguir mayúsculas) se rechaza con 409 y el aviso «Ese nombre ya
+  está en la partida: añade una inicial o un apellido». El ranking se lee sin dudas al dar premios.
+- El id pasa a ser la llave del jugador, así que el ranking anónimo solo lleva el de quien pregunta
+  (`?userId=`); los demás van vacíos. El panel, con sesión, sigue viéndolos todos.
+- La app conserva el id al «Salir de la actividad», para volver a unirse sin chocar con su propio nombre.
+- Sin migración: la tabla de jugadores no cambia. El alta de jugadores del panel (`UpsertUser`) sigue buscando
+  por nombre: es solo de admins y se revisa en el paso d (jugadores por actividad).
+- Dos uniones exactamente a la vez con el mismo nombre podrían colarse las dos: no hay índice único porque el
+  nombre vive en el jugador y no en la participación. En un evento de un día es casi imposible; si pasa, el panel
+  enseña dos «Ana».
+
+**Alternativas descartadas**
+
+- Nombre único por actividad, buscando por nombre: no hay dos «Ana», pero quien teclea «Ana» sigue quedándose con
+  su progreso.
+- Permitir nombres repetidos: menos fricción al unirse, peor al dar premios.

@@ -124,7 +124,7 @@ public sealed class FinishViewModel : ObservableObject
 			var pending = _queue.Snapshot()
 				.Count(x => x.ActivityId == _activityId && x.UserId == _userId);
 
-			var ranking = await _api.GetRankingAsync(_activityId);
+			var ranking = await _api.GetRankingAsync(_activityId, _userId);
 			var finishers = ranking.Where(r => r.FinishedAt is not null).ToList();
 			var me = ranking.FirstOrDefault(r => r.UserId == _userId);
 			var placeAmongFinishers = me?.FinishedAt is null
