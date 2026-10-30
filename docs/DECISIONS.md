@@ -219,8 +219,14 @@ Flujo jugador: escanear QR o teclear código → nombre (+ contacto) → jugar �
 
 | Modo | Jugabilidad | Ranking / premios |
 |------|-------------|-------------------|
-| **Sequential** (default) | Siguiente POI = primer no capturado por `Order`. | Meta = captura del último `Order` (equiv. completar todos si el cliente respeta la ruta). |
+| **Sequential** (default) | Siguiente POI = primer no capturado por `Order`. | Meta = captura del último `Order` (equivale a completar todos: el servidor no deja saltarse ninguno). |
 | **Free** | Objetivo = POI pendiente más cercano (fase app). | Meta = instante en que se completan **todos** los POIs (`max CapturedAt`), sin importar el orden. |
+
+**El servidor exige el orden** (fase 13, paso b; decidido por el autor el 2026-10-30): hasta entonces solo lo
+respetaba el HUD, y una app modificada podía ir directa a la meta y ganar el ranking. `CapturePoiHandler` rechaza
+la captura de un POI si queda alguno anterior sin capturar, con la misma forma que «fuera de rango» (`Success =
+false`, sin pista ni puntos, mensaje con el POI pendiente): el HUD lo enseña y la cola sin conexión, que envía por
+orden de hora, no lo reintenta. Alternativa descartada: dejarlo en el cliente (contradice D4).
 
 Fase 1 (esta): dominio + API + Admin. Fase 2: HUD elige por cercanía. Fase 3: copy / live pulidos.
 
@@ -389,8 +395,19 @@ para los tests de base de datos y que `main` exija el CI en verde.
   (`enforce_admins`), sin revisiones obligatorias (hay un solo desarrollador).
 - Acciones en Node 24 (`actions/checkout@v7`, `actions/setup-dotnet@v6`): las v4 usan Node 20, obsoleto en los
   runners de GitHub.
-- Los tests de base de datos (paso b) usarán `Testcontainers.PostgreSql`: el fallo de fechas de la fase 12 solo
-  aparecía con Postgres de verdad.
+- Los tests de base de datos (paso b) usan `Testcontainers.PostgreSql` 4.16.0 (MIT, octubre de 2026; sigue
+  siendo la última el 2026-10-30): el fallo de fechas de la fase 12 solo aparecía con Postgres de verdad.
+  - Un contenedor `postgres:17-alpine` para toda la colección `Postgres` (`PostgresFixture`), con
+    `Database.MigrateAsync()`: se prueban las migraciones de verdad. Las clases de la colección corren en serie.
+  - Sin limpieza entre tests: cada uno siembra su organización, actividad, POIs y jugadores con ids, códigos y
+    nombres nuevos (`TestData`). Los nombres tienen que ser únicos porque unirse busca al jugador por nombre.
+  - Un `AppDbContext` nuevo para sembrar, otro para el handler y otro para comprobar, como en peticiones
+    distintas: así no se cuela nada de la caché de EF.
+  - Los handlers se construyen a mano con el contexto (`new CapturePoiHandler(db)`): el mediador propio solo
+    busca el handler en el contenedor de servicios y no añade ningún paso intermedio, así que pasar por él no
+    probaría nada más.
+  - La siembra crea las actividades con hora +01:00, como el panel, y un test manda una captura sin conexión con
+    +01:00: si alguien quita el paso a UTC, Npgsql falla (comprobado quitándolo a propósito).
 - En los tests, coordenadas neutras alrededor de (0, 0): el repo es público.
 
 **Alternativas descartadas**

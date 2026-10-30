@@ -1,7 +1,7 @@
 # Estado
 
 **Fase:** 13 — Tests y CI (la 12 solo espera la factura de octubre)
-**Actualizado:** 2026-10-29
+**Actualizado:** 2026-10-30
 
 Lo cerrado hasta la fase 11 está en `docs/historia.md`.
 
@@ -14,8 +14,22 @@ Lo cerrado hasta la fase 11 está en `docs/historia.md`.
   de los tres workflows pasan a `checkout@v7` y `setup-dotnet@v6` (Node 24).
   Validado: en local y en el CI, 0 avisos y 44 tests en verde; un test roto a propósito puso el CI en rojo y la PR
   en `BLOCKED`; al deshacerlo, verde y `CLEAN`. Despliegue y keepalive en verde con las acciones nuevas.
-- [ ] Paso b — handlers contra Postgres (Testcontainers).
+- [x] Paso b — handlers contra Postgres (2026-10-30): 16 tests en `tests/GincanaHud.Tests/Handlers` contra un
+  Postgres 17 de Testcontainers con las migraciones aplicadas (`PostgresFixture`, un contenedor para la colección;
+  `TestData` siembra por el dominio). `JoinActivityHandler`: código válido (también en minúsculas), inexistente
+  (`NotFound`), actividad caducada o inactiva, y el mismo nombre dos veces deja un solo participante.
+  `CapturePoiHandler`: lejos sin pista ni puntos, dentro del radio con pista y puntos, orden secuencial, ruta libre
+  en cualquier orden, antes de empezar y tras acabar, repetir no suma dos veces, y la hora de la cola sin conexión
+  (+01:00) se guarda en UTC. `GetRankingHandler`: orden (quien termina antes, luego más capturas, luego la última
+  captura más temprana; sin capturas no sale), puntos, capturas y meta de cada fila, y actividad inexistente.
+  - Cambio de comportamiento: **el servidor exige el orden en la ruta secuencial** (D19, decidido por el autor);
+    antes solo lo respetaba el HUD. `CapturePoiHandler` reescrito sin las líneas en blanco dobles que tenía.
+  - `CLAUDE.md` (sección Repo) y README al día: hay CI, `main` protegida y los tests necesitan Docker.
+  Validado: en local, 0 avisos y 60 tests en verde (~14 s con el contenedor). Quitar a propósito el paso a UTC de
+  `Capture.Record` pone en rojo el test de la cola con el error de Npgsql de la fase 12.
 - [ ] Paso c — cliente del panel.
+- Pendiente para el autor (no es de esta fase): unirse reconoce al jugador **por el nombre** en toda la base de
+  datos; dos personas con el mismo nombre en una actividad serían el mismo jugador y compartirían capturas.
 
 ## Fase 12 — cerrada salvo la factura
 
@@ -138,7 +152,7 @@ Lo cerrado hasta la fase 11 está en `docs/historia.md`.
 | Tema | Nota |
 |------|------|
 | Crash Android `jumpToEnd` | Bug de IDs tras Fast Deployment (.NET 11). `EmbedAssembliesIntoApk=true`. Si vuelve: desinstalar la app y redesplegar. |
-| Tests | Solo dominio y geodesia (fase 13 en marcha). Workflows: `CI`, keepalive diario y `Despliegue` (a mano). |
+| Tests | Dominio, geodesia y handlers contra Postgres (Docker en marcha); falta el cliente del panel. Workflows: `CI`, keepalive diario y `Despliegue` (a mano). |
 | Toolchain MAUI | El SDK 11 preview 6 de `global.json` ya no está instalado; `rollForward` coge el 11 RC3. Workload `maui-android` RC2 instalado el 2026-10-29: la app compila con los paquetes de MAUI preview 6. |
 | Functions en local | Hace falta Azure Functions Core Tools (`winget install Microsoft.Azure.FunctionsCoreTools`, 4.15.2) en el PATH del proceso que lanza el AppHost. |
 
