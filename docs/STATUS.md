@@ -1,10 +1,17 @@
 # Estado
 
-**Fase:** ninguna en marcha. La 13 (tests y CI) se cerró el 2026-10-30; la 12 solo espera la factura de octubre.
-`PLAN.md` no tiene fase siguiente.
+**Fase:** 14 — Pulido final (la 12 solo espera la factura de octubre)
 **Actualizado:** 2026-10-30
 
 Lo cerrado hasta la fase 11 y la fase 13 están en `docs/historia.md`.
+
+## Fase 14 — en marcha
+
+- [ ] Paso a — repaso de la visión (sin código).
+- [ ] Paso b — identidad del jugador.
+- [ ] Paso c — jugadores por actividad.
+- [ ] Paso d — despliegue y prueba final. Hasta entonces, la nube no exige el orden secuencial (último despliegue:
+  2026-10-29, antes de la PR #13).
 
 ## Fase 12 — cerrada salvo la factura
 
@@ -138,3 +145,13 @@ Lo cerrado hasta la fase 11 y la fase 13 están en `docs/historia.md`.
 - Enlace mágico o JWT para el jugador (el móvil sigue anónimo).
 - Una BD por organización.
 - Key Vault (depende de la decisión de la fase 12).
+- Posición falsa (valorado el 2026-10-30). Con una app de ubicación simulada con joystick se puede «llegar» a cada
+  POI siguiendo el propio HUD, sin conocer las coordenadas. Y quien sepa mirar una API las tiene sin sesión:
+  `by-code` da el id y el detalle de la actividad trae los POIs. Probabilidad baja (en fiestas y empresas, casi
+  nula; plausible con adolescentes y un premio que importe), y el daño es un premio mal dado. Si algún día hace
+  falta:
+  1. Velocidad entre capturas en el servidor (más de unos 20 km/h a pie no es creíble): marcar al jugador en el
+     ranking del panel, sin rechazar, porque el GPS da saltos. Cubre cualquier forma de falsear la posición.
+  2. Después, si hiciera falta: mandar `Location.IsFromMockProvider` (MAUI) en la captura y rechazarla.
+  Descartados: Play Integrity (proyecto de Google Cloud y clave, demasiado para el riesgo) y un QR en cada POI
+  (cambia el juego).
