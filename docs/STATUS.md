@@ -26,7 +26,8 @@ Lo cerrado hasta la fase 11 y la fase 13 están en `docs/historia.md`.
       (despliegue).
   - **Contradicción resuelta:** `CLAUDE.md` decía que las pistas no llegan hasta capturar, y el HUD enseña la del
     POI al que vas. El autor decide que una pista es una ayuda para encontrarlo: se corrige el principio (D24).
-- [ ] Paso b — privacidad y permisos, partido en b1 y b2.
+- [x] Paso b — privacidad y permisos, partido en b1 y b2 (cerrado el 2026-10-30 con la prueba del autor en el
+  panel de la nube).
   - [x] b1 — contactos sin sesión (2026-10-30). `GET /api/activities` y `POST /api/users` piden sesión de admin, y
     la lista solo trae las actividades de la organización del admin (`AdminScope`; el SuperAdmin, todas). El
     ranking anónimo sale sin correo ni teléfono; el panel usa `GET /api/activities/{id}/ranking/contacts`, con
@@ -38,8 +39,8 @@ Lo cerrado hasta la fase 11 y la fase 13 están en `docs/historia.md`.
     guardado, funciones anónimas y `AdminScope`). En la nube (despliegue desde `main` tras la PR #17, en verde),
     sin sesión: lista de actividades, alta de jugador y ranking con contactos → 401; salud 200; código
     inexistente 404. El ranking anónimo no se puede mirar desde fuera porque sin sesión ya no hay forma de sacar
-    el id de una actividad. Con este despliegue la nube exige también el orden secuencial. Falta que el autor
-    vea en el panel que el ranking sigue enseñando el contacto.
+    el id de una actividad. Con este despliegue la nube exige también el orden secuencial. El autor ha visto
+    en el panel de la nube que el ranking sigue enseñando el contacto.
   - [x] b2 — la Api separa organizaciones (2026-10-30). Los endpoints del panel pasan la organización del token
     (`AdminScope`) a sus órdenes: editar actividad, añadir, editar y quitar POI de una actividad y el directo
     contestan «no encontrada» si la actividad es de otra organización; crear actividad o POI en otra, 403. En
@@ -48,7 +49,8 @@ Lo cerrado hasta la fase 11 y la fase 13 están en `docs/historia.md`.
     ninguna organización: queda para el paso c.
     Validado: en local, 0 avisos y 93 tests en verde (10 nuevos en `OrganizationScopeTests` y
     `FunctionAuthorizationTests`: otra organización no edita, ni añade, edita o quita POIs, ni ve el directo, ni
-    crea; la propia y el SuperAdmin sí editan; las listas se restringen).
+    crea; la propia y el SuperAdmin sí editan; las listas se restringen). En el panel de la nube, el autor con un
+    admin de empresa: sus actividades, crear y mover un POI, y el directo.
 - [x] Paso c — identidad del jugador (D25), 2026-10-30.
   - `JoinActivityHandler` crea un jugador nuevo en cada unión; reutiliza el de `JoinActivityRequest.UserId` solo
     si ya está en esa actividad. Un nombre que ya está en la partida → 409 `Player.NameTaken`.
@@ -64,8 +66,11 @@ Lo cerrado hasta la fase 11 y la fase 13 están en `docs/historia.md`.
   Visto de paso en el móvil (pendiente, sin paso asignado): el aviso de error sale debajo del botón y hay que
   bajar para leerlo entero; en el podio del final, el nombre del #2 no se lee; tras salir desde la pantalla
   final, Unirse sigue diciendo «Listo… Arrancando…».
-- [ ] Paso d — panel: jugadores por actividad y QR (D26), partido en d1 y d2.
-  - [ ] d1 — jugadores por actividad. Código hecho, falta que el autor lo pruebe en el panel. En el detalle de la
+- [x] Paso d — panel: jugadores por actividad y QR (D26), partido en d1 y d2 (2026-10-30). Desplegados juntos
+  desde `main` tras la PR #22 (despliegue en verde; sin sesión, borrar jugadores → 401 y el alta anónima de
+  participantes ya no existe → 404). El autor lo ha probado en el panel de la nube: quitar uno, borrar todos, con
+  confirmación y fuera también del ranking; copiar código e invitación y descargar el QR.
+  - [x] d1 — jugadores por actividad. En el detalle de la
     actividad, la sección «Jugadores» (del directo) con «Quitar» por fila y «Borrar todos los jugadores», con
     confirmación. `RemovePlayersHandler` borra capturas, participación y jugador en una transacción, solo en la
     organización del token. Fuera «Vaciar jugadores», el alta manual (`ClearPlayers`, `UpsertUser`) y el alta de
@@ -74,7 +79,7 @@ Lo cerrado hasta la fase 11 y la fase 13 están en `docs/historia.md`.
     lleva capturas, participación y contacto; borrar todos solo toca esa actividad; otra organización no borra
     nada; el SuperAdmin sí; un jugador de otra actividad no se encuentra; uno de antes de D25 conserva su otra
     actividad); la app compila con 0 avisos.
-  - [ ] d2 — QR y código. Código hecho, falta que el autor lo pruebe en el panel. En el detalle de la actividad,
+  - [x] d2 — QR y código. En el detalle de la actividad,
     junto al QR: «Copiar código», «Copiar invitación» (`JoinInvitation`, texto corto para WhatsApp o email) y
     «Descargar QR (PNG)» de unos 1200 px para carteles. «Evento» pasa a «Actividad» en la lista y el detalle.
     Validado: en local, 0 avisos y 103 tests en verde (2 nuevos en `JoinMaterialTests`: el PNG descargado mide
