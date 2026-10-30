@@ -55,5 +55,6 @@ dotnet run --project src/GincanaHud.AppHost
 
 ## Repo
 
-`victorvalenciamunoz/gincanaHud`, público. No tiene CI de build ni `main` protegida: aun así, cada paso en una rama
-y por pull request.
+`victorvalenciamunoz/gincanaHud`, público. Cada paso en una rama y por pull request: el workflow `CI` compila con
+avisos como errores y pasa los tests, y `main` exige su check «Build y tests» en verde, también al administrador
+(D23). Los tests de handlers usan Testcontainers: Docker tiene que estar en marcha.

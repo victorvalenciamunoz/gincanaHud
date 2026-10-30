@@ -24,6 +24,15 @@ Abre el dashboard de Aspire: Postgres, Functions (puerto 5263) y panel.
 En el cliente MAUI, `ApiOptions.BaseUrl` en `MauiProgram.cs` apunta a la nube. Para probar contra las Functions
 locales: `http://127.0.0.1:5263/` y `adb reverse tcp:5263 tcp:5263` con el móvil por USB.
 
+## Tests
+
+```bash
+dotnet test
+```
+
+Los tests de los handlers levantan su propio Postgres con Testcontainers: Docker tiene que estar en marcha. El CI
+(`.github/workflows/ci.yml`) los pasa en cada pull request y `main` no acepta una PR en rojo.
+
 ## Nube (0 €)
 
 Panel y Functions en **Azure Static Web Apps Free**; Postgres en **Supabase Free** (D20, D22).
@@ -51,5 +60,6 @@ gh workflow run deploy.yml
 | `GincanaHud.App` | MAUI HUD (Android-first) |
 | `GincanaHud.Shared` | DTOs / GeoMath |
 | `GincanaHud.ServiceDefaults` | OpenTelemetry / health / HttpClient |
+| `GincanaHud.Tests` | xUnit: dominio, geodesia y handlers contra Postgres |
 
 Más detalle en `docs/` (`STATUS`, `ARCHITECTURE`, `DOMAIN`, `DECISIONS`).
