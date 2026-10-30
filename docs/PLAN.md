@@ -92,6 +92,11 @@ por terminado, a falta de ideas nuevas.
 - **Paso f — Despliegue y prueba final.** Workflow `Despliegue` (con migraciones si el paso c las trae), fuera los
   jugadores de prueba de Supabase y una actividad de prueba jugada desde el móvil contra la nube.
   *Bueno cuando:* se cumple el juez.
+- **Paso g — APK descargable para probar (D28).** `scripts/publish-apk.ps1` compila en Release, firma con una
+  clave propia fuera del repo y verifica la firma; la 0.9.0 se publica a mano en GitHub Releases como
+  *pre-release*, con notas que explican que hace falta el código de una actividad de la nube.
+  *Bueno cuando:* el APK firmado, instalado en el móvil del autor, se une a una actividad de la nube y captura, y
+  el enlace de la release lo descarga.
 
 **Juez:** cada requisito de `VISION.md` cumple o ha salido de alcance con una decisión del autor, y desde el móvil,
 contra la nube, una actividad de prueba completa (unirse, capturar en orden, ranking, limpiar jugadores) funciona.
