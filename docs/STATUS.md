@@ -1,7 +1,7 @@
 # Estado
 
 **Fase:** 14 — Pulido final (la 12 solo espera la factura de octubre)
-**Actualizado:** 2026-10-30
+**Actualizado:** 2026-11-04
 
 Lo cerrado hasta la fase 11 y la fase 13 están en `docs/historia.md`.
 
@@ -110,6 +110,13 @@ Lo cerrado hasta la fase 11 y la fase 13 están en `docs/historia.md`.
   verifica la firma con `apksigner`. Versión 0.9.0 (`ApplicationVersion` 900); `artifacts/` fuera del repo.
   Primer APK: 31 MB, firma verificada. Faltan: instalarlo en el móvil del autor (antes hay que desinstalar la
   versión de desarrollo, firmada con otra clave), unirse y capturar contra la nube, y publicar la release.
+- [ ] Arreglo fuera del plan — RLS en Supabase (D29), 2026-11-04. Supabase avisó de que sus tablas eran públicas
+  por su Data API (`rls_disabled_in_public`). La migración `EnableRowLevelSecurity` activa RLS sin políticas en
+  las tablas de la app y en `__EFMigrationsHistory`: `anon` y `authenticated` no ven nada, la Api (dueña de las
+  tablas) sigue igual.
+  Validado: en local, 0 avisos y 105 tests en verde (2 nuevos en `RowLevelSecurityTests`: toda tabla de `public`
+  con RLS; un rol como `anon` no ve jugadores). Falta: desplegar (workflow `Despliegue`) y comprobar que el aviso
+  desaparece en Supabase y que la Api sigue contestando.
 
 ## Fase 12 — cerrada salvo la factura
 

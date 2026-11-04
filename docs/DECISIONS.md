@@ -576,3 +576,28 @@ de MAUI.
   los secretos; merece la pena si se publica a menudo.
 - Google Play: cuenta de pago (choca con el coste 0 €) y revisión.
 - Firmar con la clave de depuración: es pública y cambia entre máquinas.
+
+## D29 — RLS en las tablas de la app en Supabase
+
+**Contexto:** fase 14 (2026-11-04). Supabase avisó `rls_disabled_in_public`: su Data API (PostgREST) sirve las
+tablas de `public` a los roles `anon` y `authenticated`, con permisos completos por defecto. Con la URL del
+proyecto y la clave `anon`, que Supabase da por pública, cualquiera podía leer, cambiar o borrar jugadores (con su
+contacto), admins (con el hash de la contraseña) y el resto. La Api no usa esa vía: se conecta a Postgres como
+dueña de las tablas.
+
+**Decisión**
+
+- Migración `EnableRowLevelSecurity`: RLS activado, sin ninguna política, en las ocho tablas de la app y en
+  `__EFMigrationsHistory`. Sin políticas, `anon` y `authenticated` no ven ni tocan ninguna fila; al dueño de la
+  tabla (el usuario de la Api y de las migraciones) RLS no le aplica, así que la Api sigue igual. En local
+  (contenedor de Aspire) no cambia nada.
+- `keepalive_ping` no se toca: ya tenía RLS y su política de lectura para `anon`, que usa el ping REST.
+- `RowLevelSecurityTests` falla si una tabla de `public` queda sin RLS (una tabla nueva tiene que activarlo en su
+  migración) y comprueba que un rol sin ser dueño, como `anon`, no ve jugadores.
+
+**Alternativas descartadas**
+
+- Apagar la Data API en Supabase: lo usa el ping REST del keepalive, que Supabase cuenta mejor como actividad.
+- Quitar los permisos (`REVOKE`) a `anon` y `authenticated`: esos roles no existen en local ni en los tests, y
+  Supabase los vuelve a dar a cada tabla nueva; RLS es lo que su aviso pide.
+- Sacar las tablas de `public` a otro esquema: cambia la configuración de EF y de las migraciones para lo mismo.
